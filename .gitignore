@@ -30,3 +30,6 @@
 *.exe
 *.out
 *.app
+
+# Yacc/Bison files
+y.tab.c
