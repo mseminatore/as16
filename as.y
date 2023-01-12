@@ -18,8 +18,22 @@ FILE *fout = NULL;
 
 uint16_t inst;
 
+#ifdef _WIN32
+#   define strcasecmp stricmp
+#endif
+
 // remove this later
 #define YYDEBUG 1
+
+void emit(uint16_t v)
+{
+    printf("%04X\n", v);
+}
+
+uint16_t rrr(int op, int ra, int rb, int rc) { return (op << OP_SHIFT) | (ra << RA_SHIFT) | (rb << RB_SHIFT) | rc; }
+uint16_t rri(int op, int ra, int rb, int imm7) { return (op << OP_SHIFT) | (ra << RA_SHIFT) | (rb << RB_SHIFT) | imm7; }
+uint16_t ri(int op, int ra, int imm10) { return (op << OP_SHIFT) | (ra << RA_SHIFT) | imm10; }
+
 %}
 
 %union 
@@ -29,6 +43,7 @@ uint16_t inst;
 }
 
 %token <ival> ID ADD ADDI NAND LUI SW LW BEQ JALR
+%token <ival> RET PUSH POP CALL J MOVI LLI NOP
 %token <ival> NUMBER R0 R1 R2 R3 R4 R5 R6 R7
 %type <ival> register imm7 imm10 line instruction
 
@@ -38,7 +53,7 @@ lines:
     | line lines
     ;
 
-line: label instruction     { printf("%04X\n", $2); }
+line: label instruction     {  }
     ;
 
 label:
@@ -51,14 +66,22 @@ imm7: NUMBER    { $$ = $1 & 0x7f; }
 imm10: NUMBER   { $$ = $1 & 0x3ff; }
     ;
 
-instruction: ADD register ',' register ',' register     { $$ = (0 << OP_SHIFT) | ($2 << RA_SHIFT) | ($4 << RB_SHIFT) | $6; }
-    | ADDI register ',' register ',' imm7               { $$ = (1 << OP_SHIFT) | ($2 << RA_SHIFT) | ($4 << RB_SHIFT) | $6; }
-    | NAND register ',' register ',' register           { $$ = (2 << OP_SHIFT) | ($2 << RA_SHIFT) | ($4 << RB_SHIFT) | $6; }
-    | LUI register ',' imm10                            { $$ = (3 << OP_SHIFT) | ($2 << RA_SHIFT) | $4; }
-    | SW register ',' register ',' imm7                 { $$ = (4 << OP_SHIFT) | ($2 << RA_SHIFT) | ($4 << RB_SHIFT) | $6; }
-    | LW register ',' register ',' imm7                 { $$ = (5 << OP_SHIFT) | ($2 << RA_SHIFT) | ($4 << RB_SHIFT) | $6; }
-    | BEQ register ',' register ',' imm7                { $$ = (6 << OP_SHIFT) | ($2 << RA_SHIFT) | ($4 << RB_SHIFT) | $6; }
-    | JALR register ',' register                        { $$ = (7 << OP_SHIFT) | ($2 << RA_SHIFT) | ($4 << RB_SHIFT); }
+instruction: ADD register ',' register ',' register     { emit(rrr(0, $2, $4, $6)); }
+    | ADDI register ',' register ',' imm7               { emit(rri(1, $2, $4, $6)); }
+    | NAND register ',' register ',' register           { emit(rrr(2, $2, $4, $6)); }
+    | LUI register ',' imm10                            { emit(ri(3, $2, $4)); }
+    | SW register ',' register ',' imm7                 { emit(rri(4, $2, $4, $6)); }
+    | LW register ',' register ',' imm7                 { emit(rri(5, $2, $4, $6)); }
+    | BEQ register ',' register ',' imm7                { emit(rri(6, $2, $4, $6)); }
+    | JALR register ',' register                        { emit(rri(7, $2, $4, 0)); }
+    | RET                                               { emit(rri(7, 0, 6, 0)); }
+    | PUSH register                                     { /*emit(); emit(); */ }
+    | POP register                                      { /*emit(); emit(); */ }
+    | J register                                        { emit(rri(7, 0, $2, 0)); }
+    | CALL register                                     { emit(rri(7, 6, $2, 0)); }
+    | MOVI                                              { /*emit(); emit(); */ }
+    | LLI register ',' imm7                             { emit(rri(1, $2, $2, $4 & 0x3f)); }
+    | NOP                                               { emit(rrr(0, 0, 0, 0)); }                          
     ;
 
 register: R0    { $$ = 0; }
@@ -96,6 +119,16 @@ Tokens tokens[] =
     {"R5", R5},
     {"R6", R6},
     {"R7", R7},
+
+    {"RET", RET},
+    {"PUSH", PUSH},
+    {"POP", POP},
+    {"CALL", CALL},
+    {"J", J},
+    {"MOVI", MOVI},
+    {"LLI", LLI},
+    {"NOP", NOP},
+
     { NULL, 0}
 };
 
