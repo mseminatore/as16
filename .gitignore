@@ -30,6 +30,9 @@
 *.exe
 *.out
 *.app
+as16
 
 # Yacc/Bison files
 y.tab.c
+y.output
+

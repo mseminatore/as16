@@ -10,7 +10,9 @@ int lineno = 1;
 int yylex();
 void yyerror(char*);
 
-//#define YYSTYPE char*
+#define OP_SHIFT 13
+#define RA_SHIFT 10
+#define RB_SHIFT 7
 
 FILE *fout = NULL;
 
@@ -23,12 +25,12 @@ uint16_t inst;
 %union 
 {
     int ival;
-    char *token;
+    char *lexeme;
 }
 
-%token LABEL ADD ADDI NAND LUI SW LW BEQ JALR
+%token <ival> ID ADD ADDI NAND LUI SW LW BEQ JALR
 %token <ival> NUMBER R0 R1 R2 R3 R4 R5 R6 R7
-%type <ival> register imm7 imm10
+%type <ival> register imm7 imm10 line instruction
 
 %%
 
@@ -36,27 +38,27 @@ lines:
     | line lines
     ;
 
-line: label instruction
+line: label instruction     { printf("%04X\n", $2); }
     ;
 
 label:
-    | LABEL
+    | ID ':'
     ;
 
-imm7: NUMBER
+imm7: NUMBER    { $$ = $1 & 0x7f; }
     ;
 
-imm10: NUMBER
+imm10: NUMBER   { $$ = $1 & 0x3ff; }
     ;
 
-instruction: ADD register ',' register ',' register
-    | ADDI register ',' register ',' imm7
-    | NAND register ',' register ',' register
-    | LUI register ',' imm10
-    | SW register ',' register ',' imm7
-    | LW register ',' register ',' imm7
-    | BEQ register ',' register ',' imm7
-    | JALR register ',' register
+instruction: ADD register ',' register ',' register     { $$ = (0 << OP_SHIFT) | ($2 << RA_SHIFT) | ($4 << RB_SHIFT) | $6; }
+    | ADDI register ',' register ',' imm7               { $$ = (1 << OP_SHIFT) | ($2 << RA_SHIFT) | ($4 << RB_SHIFT) | $6; }
+    | NAND register ',' register ',' register           { $$ = (2 << OP_SHIFT) | ($2 << RA_SHIFT) | ($4 << RB_SHIFT) | $6; }
+    | LUI register ',' imm10                            { $$ = (3 << OP_SHIFT) | ($2 << RA_SHIFT) | $4; }
+    | SW register ',' register ',' imm7                 { $$ = (4 << OP_SHIFT) | ($2 << RA_SHIFT) | ($4 << RB_SHIFT) | $6; }
+    | LW register ',' register ',' imm7                 { $$ = (5 << OP_SHIFT) | ($2 << RA_SHIFT) | ($4 << RB_SHIFT) | $6; }
+    | BEQ register ',' register ',' imm7                { $$ = (6 << OP_SHIFT) | ($2 << RA_SHIFT) | ($4 << RB_SHIFT) | $6; }
+    | JALR register ',' register                        { $$ = (7 << OP_SHIFT) | ($2 << RA_SHIFT) | ($4 << RB_SHIFT); }
     ;
 
 register: R0    { $$ = 0; }
@@ -70,6 +72,32 @@ register: R0    { $$ = 0; }
     ;
 
 %%
+
+typedef struct {
+    const char *lexeme;
+    int token;
+} Tokens;
+
+Tokens tokens[] =
+{
+    {"ADD", ADD},
+    {"ADDI", ADDI},
+    {"NAND", NAND},
+    {"LUI", LUI},
+    {"SW", SW},
+    {"LW", LW},
+    {"BEQ", BEQ},
+    {"JALR", JALR},
+    {"R0", R0},
+    {"R1", R1},
+    {"R2", R2},
+    {"R3", R3},
+    {"R4", R4},
+    {"R5", R5},
+    {"R6", R6},
+    {"R7", R7},
+    { NULL, 0}
+};
 
 #define BUF_SIZE 256
 
@@ -141,7 +169,7 @@ int getNumber()
 
 	// look for hex numbers
  	c = getchar();
-	if (c == '0' && (follow('X', 1, 0) || follow('x', 1, 0)))
+	if (c == '$' || (c == '0' && (follow('X', 1, 0) || follow('x', 1, 0))))
 		base = 16;
 	else if (c == '-' || c == '+')
 		*bufptr++ = c;
@@ -165,17 +193,22 @@ int getNumber()
 	// make sure string is asciiz
 	*bufptr = '\0';
 
-	// handle floats and ints
-//	if (!strchr(buf, '.'))
-//	{
-		yylval.ival = strtol(buf, NULL, base);
-		return NUMBER;
-//	}
-//	else
-//	{
-//		m_yylval->fval = (float)atof(buf);
-//		return TV_FLOATVAL;
-//	}
+    yylval.ival = strtol(buf, NULL, base);
+    return NUMBER;
+}
+
+//
+int isToken(const char *s)
+{
+    Tokens *pTokens = tokens;
+
+    for (; pTokens != NULL; pTokens++)
+    {
+        if (!strcasecmp(s, pTokens->lexeme))
+            return pTokens->token;
+    }
+
+    return 0;
 }
 
 //========================
@@ -221,11 +254,17 @@ yylex01:
 
         // be sure to null terminate the string
         *p = 0;
-        yylval.token = strdup(buf);
+
+        int token = isToken(buf);
+        if (token)
+        {
+            return token;
+        }
         
 //        printf("WORD: %s\n", buf);
 
-        return WORD;
+        yylval.lexeme = strdup(buf);
+        return ID;
     }
 
     // track line numbers

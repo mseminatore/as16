@@ -5,7 +5,7 @@ CFLAGS	= -I. -g
 LIBS	= -lm
 
 $(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) -c -o $@ $^ $(LIBS)
+	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
 
 y.tab.c: as.y
 	yacc -v as.y
