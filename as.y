@@ -17,6 +17,7 @@ void yyerror(char*);
 FILE *fout = NULL;
 
 uint16_t inst;
+uint16_t addr = 0;
 
 #ifdef _WIN32
 #   define strcasecmp stricmp
@@ -39,6 +40,7 @@ enum {
 void emit(uint16_t v)
 {
     printf("%04X\n", v);
+    addr++;
 }
 
 uint16_t rrr(int op, int ra, int rb, int rc) { return (op << OP_SHIFT) | (ra << RA_SHIFT) | (rb << RB_SHIFT) | rc; }
