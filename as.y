@@ -58,9 +58,17 @@ uint16_t rrr(int op, int ra, int rb, int rc) { return (op << OP_SHIFT) | (ra << 
 uint16_t rri(int op, int ra, int rb, int imm7) { return (op << OP_SHIFT) | (ra << RA_SHIFT) | (rb << RB_SHIFT) | (imm7 & 0x7f); }
 uint16_t ri(int op, int ra, int imm10) { return (op << OP_SHIFT) | (ra << RA_SHIFT) | (imm10 & 0x3ff); }
 
+enum
+{
+    ST_UNDEF,
+    ST_EQU,
+    ST_LABEL
+};
+
 typedef struct
 {
     const char *name;
+    int type;
     int value;
     int lineno;
 } Symbol_t;
@@ -83,7 +91,7 @@ int symbol_count = 0;
 %token <ival> ADD ADDI NAND LUI SW LW BEQ JALR
 %token <ival> RET PUSH POP CALL J MOVI LLI NOP
 %token <ival> NUMBER R0 R1 R2 R3 R4 R5 R6 R7 LR SP
-%type <ival> register imm7 imm10 line
+%type <ival> register imm7 imm10 line imm
 
 %%
 
@@ -91,10 +99,10 @@ file: equates lines
     ;
 
 equates:
-    | equate equates
+    | equates equate
     ;
 
-equate: NEWID EQU NUMBER         { symbols[$1].value = $3; }
+equate: NEWID EQU NUMBER         { symbols[$1].value = $3; symbols[$1].type = ST_EQU; }
     ;
 
 lines:
@@ -105,7 +113,7 @@ line: label instruction     {  }
     ;
 
 label:
-    | NEWID ':'    { symbols[$1].value = addr; }
+    | NEWID ':'    { symbols[$1].value = addr; symbols[$1].type = ST_EQU; }
     ;
 
 imm7: NUMBER    { $$ = $1 & MASK_7b; }
@@ -113,7 +121,11 @@ imm7: NUMBER    { $$ = $1 & MASK_7b; }
     ;
 
 imm10: NUMBER   { $$ = $1 & MASK_10b; }
-    | ID        { $$ = symbols[$1].value & MASK_10b; /* return symnbol */ }
+    | ID        { $$ = symbols[$1].value & MASK_10b; /* return symbol value*/ }
+    ;
+
+imm: NUMBER
+    | ID        { $$ = symbols[$1].value; /* return symbol value */ }
     ;
 
 instruction: ADD register ',' register ',' register     { emit(rrr(OP_ADD, $2, $4, $6)); }
@@ -129,7 +141,7 @@ instruction: ADD register ',' register ',' register     { emit(rrr(OP_ADD, $2, $
     | POP register                                      { emit(rri(OP_LW, $2, 7, 0)); emit(rri(OP_ADDI, 7, 7, 1)); }
     | J register                                        { emit(rri(OP_JALR, 0, $2, 0)); }
     | CALL register                                     { emit(rri(OP_JALR, 6, $2, 0)); }
-    | MOVI register ',' NUMBER                          { emit(ri(OP_LUI, $2, ($4 & 0xffc0) >> 6)); emit(rri(OP_ADDI, $2, $2, $4 & MASK_6b)); }
+    | MOVI register ',' imm                             { emit(ri(OP_LUI, $2, ($4 & 0xffc0) >> 6)); emit(rri(OP_ADDI, $2, $2, $4 & MASK_6b)); }
     | LLI register ',' imm7                             { emit(rri(OP_ADDI, $2, $2, $4 & 0x3f)); }
     | NOP                                               { emit(rrr(OP_ADD, 0, 0, 0)); }                          
     ;
@@ -228,6 +240,9 @@ int add_symbol(const char *name, int lineno)
 
     symbols[symbol_count].name = strdup(name);
     symbols[symbol_count].lineno = lineno;
+    symbols[symbol_count].type = ST_UNDEF;
+    symbols[symbol_count].value = -1;
+
     symbol_count++;
     return symbol_count - 1;
 }
@@ -237,7 +252,7 @@ int add_symbol(const char *name, int lineno)
 //========================
 void yyerror(char *s)
 {
-    fprintf(stderr, "error: %s at line %d\n", s, lineno);
+    fprintf(stderr, "error: %s near line %d\n", s, lineno);
 }
 
 //========================
@@ -363,7 +378,7 @@ yylex01:
 
         do {
             *p++ = c;
-        } while ((c=getchar()) != EOF && isalnum(c));
+        } while ((c=getchar()) != EOF && (c == '_' || isalnum(c)));
         
         // put back the last character!
         ungetc(c, stdin);
