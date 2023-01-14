@@ -1,7 +1,8 @@
 RAM_END EQU 0x3ff
 SSEG EQU 0x400
 
-start:  movi sp, RAM_END    # setup SP to point to top of RAM
+start:  
+        movi sp, RAM_END    # setup SP to point to top of RAM
         movi r5, SSEG       # point R5 to SSEG display
         add r1, r0, r0      # zero R1
         movi r2, disp       # get address of disp routine

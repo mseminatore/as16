@@ -65,6 +65,12 @@ enum
     ST_LABEL
 };
 
+enum
+{
+    FIXUP_IMM7,
+    FIXUP_IMM10
+};
+
 typedef struct
 {
     const char *name;
@@ -73,9 +79,20 @@ typedef struct
     int lineno;
 } Symbol_t;
 
+typedef struct
+{
+    int symbol;
+    int addr;
+    int type;
+} Fixup_t;
+
 // symbol table
 Symbol_t symbols[1024];
 int symbol_count = 0;
+
+// fixups
+Fixup_t fixups[1024];
+int fixup_count = 0;
 
 %}
 
@@ -218,6 +235,25 @@ int main(int argc, char *argv[])
     return 0;
 }
 
+// add a fixup
+void add_fixup(int symbol, int addr, int type)
+{
+    fixups[fixup_count].symbol  = symbol;
+    fixups[fixup_count].addr    = addr;
+    fixups[fixup_count].type    = type;
+
+    fixup_count++;
+}
+
+// apply fixups
+void apply_fixups()
+{
+    for (int i = 0; i < fixup_count; i++)
+    {
+
+    }
+}
+
 // lookup a symbol
 int lookup_symbol(const char *name)
 {
@@ -238,10 +274,10 @@ int add_symbol(const char *name, int lineno)
     if (lookup_symbol(name) > 0)
         return -1;
 
-    symbols[symbol_count].name = strdup(name);
-    symbols[symbol_count].lineno = lineno;
-    symbols[symbol_count].type = ST_UNDEF;
-    symbols[symbol_count].value = -1;
+    symbols[symbol_count].name      = strdup(name);
+    symbols[symbol_count].lineno    = lineno;
+    symbols[symbol_count].type      = ST_UNDEF;
+    symbols[symbol_count].value     = -1;
 
     symbol_count++;
     return symbol_count - 1;
