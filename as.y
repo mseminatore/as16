@@ -14,6 +14,10 @@ void yyerror(char*);
 #define RA_SHIFT 10
 #define RB_SHIFT 7
 
+#define MASK_6b 0x3f
+#define MASK_7b 0x7f
+#define MASK_10b 0x3ff
+
 FILE *fout = NULL;
 
 uint16_t inst;
@@ -37,9 +41,16 @@ enum {
     OP_JALR
 };
 
+#define MAX_CODE    1024
+#define MAX_SYMBOLS 1024
+
+uint16_t code[MAX_CODE];
+
+// accumulate generated code
 void emit(uint16_t v)
 {
     printf("%04X\n", v);
+    code[addr] = v;
     addr++;
 }
 
@@ -47,20 +58,44 @@ uint16_t rrr(int op, int ra, int rb, int rc) { return (op << OP_SHIFT) | (ra << 
 uint16_t rri(int op, int ra, int rb, int imm7) { return (op << OP_SHIFT) | (ra << RA_SHIFT) | (rb << RB_SHIFT) | (imm7 & 0x7f); }
 uint16_t ri(int op, int ra, int imm10) { return (op << OP_SHIFT) | (ra << RA_SHIFT) | (imm10 & 0x3ff); }
 
+typedef struct
+{
+    const char *name;
+    int value;
+    int lineno;
+} Symbol_t;
+
+// symbol table
+Symbol_t symbols[1024];
+int symbol_count = 0;
+
 %}
 
 %union 
 {
     int ival;
+    int symbol;
     char *lexeme;
 }
 
-%token <ival> ID ADD ADDI NAND LUI SW LW BEQ JALR
+%token EQU
+%token <symbol> ID NEWID
+%token <ival> ADD ADDI NAND LUI SW LW BEQ JALR
 %token <ival> RET PUSH POP CALL J MOVI LLI NOP
 %token <ival> NUMBER R0 R1 R2 R3 R4 R5 R6 R7 LR SP
-%type <ival> register imm7 imm10 line instruction
+%type <ival> register imm7 imm10 line
 
 %%
+
+file: equates lines
+    ;
+
+equates:
+    | equate equates
+    ;
+
+equate: NEWID EQU NUMBER         { symbols[$1].value = $3; }
+    ;
 
 lines:
     | line lines
@@ -70,13 +105,15 @@ line: label instruction     {  }
     ;
 
 label:
-    | ID ':'
+    | NEWID ':'    { symbols[$1].value = addr; }
     ;
 
-imm7: NUMBER    { $$ = $1 & 0x7f; }
+imm7: NUMBER    { $$ = $1 & MASK_7b; }
+    | ID        { $$ = symbols[$1].value & MASK_7b; /* return symbol value */ }
     ;
 
-imm10: NUMBER   { $$ = $1 & 0x3ff; }
+imm10: NUMBER   { $$ = $1 & MASK_10b; }
+    | ID        { $$ = symbols[$1].value & MASK_10b; /* return symnbol */ }
     ;
 
 instruction: ADD register ',' register ',' register     { emit(rrr(OP_ADD, $2, $4, $6)); }
@@ -92,7 +129,7 @@ instruction: ADD register ',' register ',' register     { emit(rrr(OP_ADD, $2, $
     | POP register                                      { emit(rri(OP_LW, $2, 7, 0)); emit(rri(OP_ADDI, 7, 7, 1)); }
     | J register                                        { emit(rri(OP_JALR, 0, $2, 0)); }
     | CALL register                                     { emit(rri(OP_JALR, 6, $2, 0)); }
-    | MOVI register ',' NUMBER                          { emit(ri(OP_LUI, $2, ($4 & 0xffc0) >> 6)); emit(rri(OP_ADDI, $2, $2, $4 & 0x3f)); }
+    | MOVI register ',' NUMBER                          { emit(ri(OP_LUI, $2, ($4 & 0xffc0) >> 6)); emit(rri(OP_ADDI, $2, $2, $4 & MASK_6b)); }
     | LLI register ',' imm7                             { emit(rri(OP_ADDI, $2, $2, $4 & 0x3f)); }
     | NOP                                               { emit(rrr(OP_ADD, 0, 0, 0)); }                          
     ;
@@ -145,6 +182,7 @@ Tokens tokens[] =
     {"MOVI", MOVI},
     {"LLI", LLI},
     {"NOP", NOP},
+    { "EQU", EQU},
 
     { NULL, 0}
 };
@@ -166,6 +204,32 @@ int main(int argc, char *argv[])
     fclose(fout);
 
     return 0;
+}
+
+// lookup a symbol
+int lookup_symbol(const char *name)
+{
+    for (int i = 0; i < symbol_count; i++)
+    {
+        if (!strcasecmp(name, symbols[i].name))
+            return i;
+    }
+
+    // symbol not found!
+    return -1;
+}
+
+// add a new symbols
+int add_symbol(const char *name, int lineno)
+{
+    // error if symbol already exists
+    if (lookup_symbol(name) > 0)
+        return -1;
+
+    symbols[symbol_count].name = strdup(name);
+    symbols[symbol_count].lineno = lineno;
+    symbol_count++;
+    return symbol_count - 1;
 }
 
 //========================
@@ -254,7 +318,7 @@ int isToken(const char *s)
 {
     Tokens *pTokens = tokens;
 
-    for (; pTokens != NULL; pTokens++)
+    for (; pTokens->lexeme != NULL; pTokens++)
     {
         if (!strcasecmp(s, pTokens->lexeme))
             return pTokens->token;
@@ -313,9 +377,20 @@ yylex01:
             return token;
         }
         
-        // TODO - add ID to symbol table or return entry
-        yylval.lexeme = strdup(buf);
-        return ID;
+        // lookup symbol and return if exists
+        int sym = lookup_symbol(buf);
+        if (sym != -1)
+        {
+            yylval.symbol = sym;
+            printf("existing symbol found: %s (%d)\n", buf, sym);
+            return ID;
+        }
+
+        sym = add_symbol(buf, lineno);
+
+        yylval.symbol = sym;
+        printf("new symbol: %s (%d)\n", buf, sym);
+        return NEWID;
     }
 
     // track line numbers
