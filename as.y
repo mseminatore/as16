@@ -31,6 +31,7 @@ uint16_t addr = 0;
 // remove this later
 #define YYDEBUG 1
 
+// opcodes
 enum {
     OP_ADD,
     OP_ADDI,
@@ -44,6 +45,7 @@ enum {
 
 #define MAX_CODE    1024
 #define MAX_SYMBOLS 1024
+#define MAX_FIXUPS  1024
 
 uint16_t code[MAX_CODE];
 
@@ -98,11 +100,11 @@ typedef struct
 } Fixup_t;
 
 // symbol table
-Symbol_t symbols[1024];
+Symbol_t symbols[MAX_SYMBOLS];
 int symbol_count = 0;
 
 // fixups
-Fixup_t fixups[1024];
+Fixup_t fixups[MAX_FIXUPS];
 int fixup_count = 0;
 
 %}
@@ -117,6 +119,7 @@ int fixup_count = 0;
 %token EQU
 %token <symbol> ID NEWID
 %token <ival> ADD ADDI NAND LUI SW LW BEQ JALR
+%token <ival> INC DEC
 %token <ival> RET PUSH POP CALL J MOVI LLI NOP
 %token <ival> NUMBER R0 R1 R2 R3 R4 R5 R6 R7 LR SP
 %type <ival> register imm7 imm10 line imm
@@ -171,7 +174,9 @@ instruction: ADD register ',' register ',' register     { emit(rrr(OP_ADD, $2, $
     | CALL register                                     { emit(rri(OP_JALR, 6, $2, 0)); }
     | MOVI register ',' imm                             { emit(ri(OP_LUI, $2, ($4 & 0xffc0) >> 6)); emit(rri(OP_ADDI, $2, $2, $4 & MASK_6b)); }
     | LLI register ',' imm7                             { emit(rri(OP_ADDI, $2, $2, $4 & 0x3f)); }
-    | NOP                                               { emit(rrr(OP_ADD, 0, 0, 0)); }                          
+    | NOP                                               { emit(rrr(OP_ADD, 0, 0, 0)); }
+    | INC register                                      { emit(rri(OP_ADDI, $2, $2, 1)); }
+    | DEC register                                      { emit(rri(OP_ADDI, $2, $2, -1)); }
     ;
 
 register: R0    { $$ = 0; }
@@ -223,6 +228,8 @@ Tokens tokens[] =
     {"LLI", LLI},
     {"NOP", NOP},
     { "EQU", EQU},
+    { "INC", INC},
+    { "DEC", DEC},
 
     { NULL, 0}
 };

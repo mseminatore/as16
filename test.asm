@@ -1,4 +1,4 @@
-RAM_END EQU 0x3ff
+RAM_END EQU 0x3ff           # 1K of RAM
 SSEG EQU 0x400
 
 start:  
