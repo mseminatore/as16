@@ -27,6 +27,13 @@ In future releases I may implement direct Verilog rom file generation as well as
 Running `as16` without any other parameters will display usage information 
 including the documented command line switches.
 
+## Source Code
+
+The source includes a Makefile which should work on any Unix-like operating 
+system. The project requires `YACC` or `Bison` to compile. For expediencey on 
+machines without these tools (ahem Windows) I've included the resulting 
+y.tab.c and y.tab.h files.
+
 ## Original Instructions
 
 Mnemonic | Assembly Format | Action
