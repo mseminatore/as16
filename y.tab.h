@@ -72,7 +72,8 @@
      LR = 288,
      SP = 289,
      FILL = 290,
-     SPACE = 291
+     SPACE = 291,
+     HALT = 292
    };
 #endif
 /* Tokens.  */
@@ -110,6 +111,7 @@
 #define SP 289
 #define FILL 290
 #define SPACE 291
+#define HALT 292
 
 
 
@@ -123,7 +125,7 @@ typedef union YYSTYPE
     char *lexeme;
 }
 /* Line 1529 of yacc.c.  */
-#line 127 "y.tab.h"
+#line 129 "y.tab.h"
 	YYSTYPE;
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1

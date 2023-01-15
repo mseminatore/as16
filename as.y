@@ -67,7 +67,7 @@ int fixup_count = 0;
 %token <ival> RET PUSH POP CALL J MOVI LLI NOP
 %token <ival> NUMBER R0 R1 R2 R3 R4 R5 R6 R7 LR SP
 %type <ival> register imm7 imm10 line imm rel7
-%token FILL SPACE
+%token FILL SPACE HALT
 
 %%
 
@@ -128,6 +128,7 @@ instruction: ADD register ',' register ',' register     { emit(rrr(OP_ADD, $2, $
     | DEC register                                      { emit(rri(OP_ADDI, $2, $2, -1)); }
     | FILL NUMBER                                       { emit($2); }
     | SPACE NUMBER                                      { for(int i = 0; i < $2; i++) emit(0); }
+    | HALT                                              { emit(rri(OP_JALR, 0, 0, 1)); }
     ;
 
 register: R0    { $$ = 0; }
@@ -182,6 +183,7 @@ Tokens tokens[] =
 
     { ".FILL", FILL},
     { ".SPACE", SPACE},
+    { "HALT", HALT},
 
     { NULL, 0}
 };
@@ -190,7 +192,7 @@ Tokens tokens[] =
 int getopt(int n, char *args[])
 {
 	int i;
-	for (i = 1; args[i][0] == '-'; i++)
+	for (i = 1; args[i] && args[i][0] == '-'; i++)
 	{
 		if (args[i][1] == 'v')
 			g_bDebug = 1;
@@ -200,6 +202,9 @@ int getopt(int n, char *args[])
 			g_szOutputFilename = args[i + 1];
 			i++;
 		}
+
+        if (args[i][1] == 'i')
+            yyin = stdin;
 	}
 
 	return i;
@@ -472,14 +477,13 @@ void write_file()
 void usage()
 {
 	puts("\nusage: as16 [options] filename\n");
+    puts("-i\tget input from stdin");
 	puts("-v\tverbose output");
 	puts("-o file\tset output filename\n");
 
 	exit(0);
 
 }
-
-extern FILE *yyin;
 
 //========================
 // main entry point
@@ -491,10 +495,8 @@ int main(int argc, char *argv[])
 
 	int iFirstArg = getopt(argc, argv);
 
-//    if (strcasecmp("--", argv[iFirstArg]))
+    if (yyin != stdin)
         yyin = fopen(argv[iFirstArg], "rt");
-//    else
-//        yyin = stdin;
 
     // set this to 0 to disable parser debugging
     yydebug = 0;
