@@ -4,6 +4,7 @@
 #include <ctype.h>
 #include <string.h>
 #include <stdint.h>
+#include <assert.h>
 
 int lineno = 1;
 
@@ -46,10 +47,12 @@ enum {
 
 uint16_t code[MAX_CODE];
 
+void add_fixup(int symbol, int addr, int type);
+
 // accumulate generated code
 void emit(uint16_t v)
 {
-    printf("%04X\n", v);
+//    printf("%04X\n", v);
     code[addr] = v;
     addr++;
 }
@@ -119,7 +122,7 @@ equates:
     | equates equate
     ;
 
-equate: NEWID EQU NUMBER         { symbols[$1].value = $3; symbols[$1].type = ST_EQU; }
+equate: ID EQU NUMBER         { assert(symbols[$1].type == ST_UNDEF); symbols[$1].value = $3; symbols[$1].type = ST_EQU; }
     ;
 
 lines:
@@ -130,15 +133,15 @@ line: label instruction     {  }
     ;
 
 label:
-    | NEWID ':'    { symbols[$1].value = addr; symbols[$1].type = ST_EQU; }
+    | ID ':'    { assert(symbols[$1].type == ST_UNDEF); symbols[$1].value = addr; symbols[$1].type = ST_EQU; }
     ;
 
 imm7: NUMBER    { $$ = $1 & MASK_7b; }
-    | ID        { $$ = symbols[$1].value & MASK_7b; /* return symbol value */ }
+    | ID        { if (symbols[$1].type == ST_UNDEF) { add_fixup($1, addr, FIXUP_IMM7); $$ = 0; } else $$ = symbols[$1].value & MASK_7b; /* return symbol value */ }
     ;
 
 imm10: NUMBER   { $$ = $1 & MASK_10b; }
-    | ID        { $$ = symbols[$1].value & MASK_10b; /* return symbol value*/ }
+    | ID        { if (symbols[$1].type == ST_UNDEF) { add_fixup($1, addr, FIXUP_IMM10); $$ = 0; } else $$ = symbols[$1].value & MASK_10b; /* return symbol value*/ }
     ;
 
 imm: NUMBER
@@ -218,26 +221,11 @@ Tokens tokens[] =
 
 #define BUF_SIZE 256
 
-//========================
-// main entry point
-//========================
-int main(int argc, char *argv[])
-{
-    // set this to 0 to disable parser debugging
-    yydebug = 0;
-
-    fout = fopen("a.out", "wb");
-
-    yyparse();
-
-    fclose(fout);
-
-    return 0;
-}
-
 // add a fixup
 void add_fixup(int symbol, int addr, int type)
 {
+    printf("adding fixup for %s\n", symbols[symbol].name);
+
     fixups[fixup_count].symbol  = symbol;
     fixups[fixup_count].addr    = addr;
     fixups[fixup_count].type    = type;
@@ -248,9 +236,11 @@ void add_fixup(int symbol, int addr, int type)
 // apply fixups
 void apply_fixups()
 {
+    printf("%d fixups found.\n", fixup_count);
+
     for (int i = 0; i < fixup_count; i++)
     {
-
+        printf("fixing up reference to %s\n", symbols[fixups[i].symbol].name);
     }
 }
 
@@ -441,7 +431,7 @@ yylex01:
 
         yylval.symbol = sym;
         printf("new symbol: %s (%d)\n", buf, sym);
-        return NEWID;
+        return ID;
     }
 
     // track line numbers
@@ -452,6 +442,32 @@ yylex01:
     }
 
     // return single character tokens
-//    printf("TOKEN: '%c'\n", c);
     return c;
+}
+
+//
+void write_file()
+{
+    for (int i = 0; i < addr; i++)
+        fprintf(fout, "%04X\n", code[i]);
+}
+
+//========================
+// main entry point
+//========================
+int main(int argc, char *argv[])
+{
+    // set this to 0 to disable parser debugging
+    yydebug = 0;
+
+    fout = fopen("a.out", "wb");
+
+    yyparse();
+
+    apply_fixups();
+    write_file();
+
+    fclose(fout);
+
+    return 0;
 }
