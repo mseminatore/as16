@@ -7,10 +7,13 @@ start:
         add r1, r0, r0      # zero R1
         movi r2, disp       # get address of disp routine
 
-loop:   addi r1, r1, 1      # inc counter
-        jalr lr, r2         # call subroutine
+loop:   inc r1
+        #addi r1, r1, 1      # inc counter
+        call r2
+        #jalr lr, r2         # call subroutine
         beq r0, r0, loop    # do it again
 
 disp:   sw r1, r5, 0        # output to SSEG
-        jalr r0, lr         # return
+        ret
+        #jalr r0, lr         # return
         

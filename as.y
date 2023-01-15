@@ -75,13 +75,17 @@ enum
     FIXUP_IMM7,
     FIXUP_IMM10,
     FIXUP_IMM6,
+    FIXUP_IMM10_HI,
+    FIXUP_REL7
 };
 
 const char *fixup_names[] =
 {
     "IMM7",
     "IMM10",
-    "IMM6"
+    "IMM6",
+    "IMM10_HI",
+    "REL7"
 };
 
 typedef struct
@@ -122,7 +126,7 @@ int fixup_count = 0;
 %token <ival> INC DEC
 %token <ival> RET PUSH POP CALL J MOVI LLI NOP
 %token <ival> NUMBER R0 R1 R2 R3 R4 R5 R6 R7 LR SP
-%type <ival> register imm7 imm10 line imm
+%type <ival> register imm7 imm10 line imm rel7
 
 %%
 
@@ -144,7 +148,11 @@ line: label instruction     {  }
     ;
 
 label:
-    | ID ':'    { assert(symbols[$1].type == ST_UNDEF); symbols[$1].value = addr; symbols[$1].type = ST_EQU; }
+    | ID ':'    { assert(symbols[$1].type == ST_UNDEF); symbols[$1].value = addr; symbols[$1].type = ST_LABEL; }
+    ;
+
+rel7: NUMBER    { $$ = $1 & MASK_7b; }
+    | ID        { if (symbols[$1].type == ST_UNDEF) { add_fixup($1, addr, FIXUP_REL7); $$ = 0; } else { printf("target addr %d, inst addr %d\n", symbols[$1].value, addr); $$ = (symbols[$1].value & MASK_7b) - (addr + 1);  }/* return symbol value */ }
     ;
 
 imm7: NUMBER    { $$ = $1 & MASK_7b; }
@@ -156,7 +164,7 @@ imm10: NUMBER   { $$ = $1 & MASK_10b; }
     ;
 
 imm: NUMBER
-    | ID        { if (symbols[$1].type == ST_UNDEF) { add_fixup($1, addr, FIXUP_IMM10); add_fixup($1, addr + 1, FIXUP_IMM6); $$ = 0; } else $$ = symbols[$1].value; /* return symbol value */ }
+    | ID        { if (symbols[$1].type == ST_UNDEF) { add_fixup($1, addr, FIXUP_IMM10_HI); add_fixup($1, addr + 1, FIXUP_IMM6); $$ = 0; } else $$ = symbols[$1].value; /* return symbol value */ }
     ;
 
 instruction: ADD register ',' register ',' register     { emit(rrr(OP_ADD, $2, $4, $6)); }
@@ -165,7 +173,7 @@ instruction: ADD register ',' register ',' register     { emit(rrr(OP_ADD, $2, $
     | LUI register ',' imm10                            { emit(ri(OP_LUI, $2, $4)); }
     | SW register ',' register ',' imm7                 { emit(rri(OP_SW, $2, $4, $6)); }
     | LW register ',' register ',' imm7                 { emit(rri(OP_LW, $2, $4, $6)); }
-    | BEQ register ',' register ',' imm7                { emit(rri(OP_BEQ, $2, $4, $6)); }
+    | BEQ register ',' register ',' rel7                { emit(rri(OP_BEQ, $2, $4, $6)); }
     | JALR register ',' register                        { emit(rri(OP_JALR, $2, $4, 0)); }
     | RET                                               { emit(rri(OP_JALR, 0, 6, 0)); }
     | PUSH register                                     { emit(rri(OP_ADDI, 7, 7, -1)); emit(rri(OP_SW, $2, 7, 0)); }
@@ -264,6 +272,10 @@ void apply_fixups()
             code[f.addr] |= symbols[f.symbol].value & MASK_10b;
             break;
 
+        case FIXUP_IMM10_HI:
+            code[f.addr] |= (symbols[f.symbol].value & 0xffc0) >> 6;
+            break;
+
         case FIXUP_IMM7:
             code[f.addr] |= symbols[f.symbol].value & MASK_7b;
             break;
@@ -272,6 +284,8 @@ void apply_fixups()
             code[f.addr] |= symbols[f.symbol].value & MASK_6b;
             break;
 
+        case FIXUP_REL7:
+            break;
 
         default:
             assert(0);
