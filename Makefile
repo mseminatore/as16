@@ -8,7 +8,7 @@ $(TARGET): $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
 
 y.tab.c: as.y
-	yacc -v as.y
+	yacc -v -d as.y
 
 as.o:	y.tab.c
 	$(CC) $(CFLAGS) -c -o $@ $<

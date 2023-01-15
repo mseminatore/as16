@@ -5,6 +5,8 @@
 #include <string.h>
 #include <stdint.h>
 #include <assert.h>
+#include "as.h"
+//#include "y.tab.h"
 
 // command line switches
 const char * g_szOutputFilename = "a.out";
@@ -13,49 +15,12 @@ int g_bDebug = 0;
 int lineno = 1;
 
 FILE *yyin = NULL;
-
-int yylex();
-void yyerror(char*);
-
-#define OP_SHIFT 13
-#define RA_SHIFT 10
-#define RB_SHIFT 7
-
-#define MASK_6b 0x3f
-#define MASK_7b 0x7f
-#define MASK_10b 0x3ff
-
 FILE *fout = NULL;
 
 uint16_t inst;
 uint16_t addr = 0;
 
-#ifdef _WIN32
-#   define strcasecmp stricmp
-#endif
-
-// remove this later
-#define YYDEBUG 1
-
-// opcodes
-enum {
-    OP_ADD,
-    OP_ADDI,
-    OP_NAND,
-    OP_LUI,
-    OP_SW,
-    OP_LW,
-    OP_BEQ,
-    OP_JALR
-};
-
-#define MAX_CODE    1024
-#define MAX_SYMBOLS 1024
-#define MAX_FIXUPS  1024
-
 uint16_t code[MAX_CODE];
-
-void add_fixup(int symbol, int addr, int type);
 
 // accumulate generated code
 void emit(uint16_t v)
@@ -64,25 +29,10 @@ void emit(uint16_t v)
     addr++;
 }
 
+// helper functions
 uint16_t rrr(int op, int ra, int rb, int rc) { return (op << OP_SHIFT) | (ra << RA_SHIFT) | (rb << RB_SHIFT) | rc; }
 uint16_t rri(int op, int ra, int rb, int imm7) { return (op << OP_SHIFT) | (ra << RA_SHIFT) | (rb << RB_SHIFT) | (imm7 & 0x7f); }
 uint16_t ri(int op, int ra, int imm10) { return (op << OP_SHIFT) | (ra << RA_SHIFT) | (imm10 & 0x3ff); }
-
-enum
-{
-    ST_UNDEF,
-    ST_EQU,
-    ST_LABEL
-};
-
-enum
-{
-    FIXUP_IMM7,
-    FIXUP_IMM10,
-    FIXUP_IMM6,
-    FIXUP_IMM10_HI,
-    FIXUP_REL7
-};
 
 const char *fixup_names[] =
 {
@@ -92,21 +42,6 @@ const char *fixup_names[] =
     "IMM10_HI",
     "REL7"
 };
-
-typedef struct
-{
-    const char *name;
-    int type;
-    int value;
-    int lineno;
-} Symbol_t;
-
-typedef struct
-{
-    int symbol;
-    int addr;
-    int type;
-} Fixup_t;
 
 // symbol table
 Symbol_t symbols[MAX_SYMBOLS];
@@ -132,6 +67,7 @@ int fixup_count = 0;
 %token <ival> RET PUSH POP CALL J MOVI LLI NOP
 %token <ival> NUMBER R0 R1 R2 R3 R4 R5 R6 R7 LR SP
 %type <ival> register imm7 imm10 line imm rel7
+%token FILL SPACE
 
 %%
 
@@ -190,6 +126,8 @@ instruction: ADD register ',' register ',' register     { emit(rrr(OP_ADD, $2, $
     | NOP                                               { emit(rrr(OP_ADD, 0, 0, 0)); }
     | INC register                                      { emit(rri(OP_ADDI, $2, $2, 1)); }
     | DEC register                                      { emit(rri(OP_ADDI, $2, $2, -1)); }
+    | FILL NUMBER                                       { emit($2); }
+    | SPACE NUMBER                                      { for(int i = 0; i < $2; i++) emit(0); }
     ;
 
 register: R0    { $$ = 0; }
@@ -205,11 +143,6 @@ register: R0    { $$ = 0; }
     ;
 
 %%
-
-typedef struct {
-    const char *lexeme;
-    int token;
-} Tokens;
 
 Tokens tokens[] =
 {
@@ -229,9 +162,12 @@ Tokens tokens[] =
     {"R5", R5},
     {"R6", R6},
     {"R7", R7},
+
+    // useful register aliases
     {"LR", LR},
     {"SP", SP},
 
+    // pseudo instructions
     {"RET", RET},
     {"PUSH", PUSH},
     {"POP", POP},
@@ -244,14 +180,13 @@ Tokens tokens[] =
     { "INC", INC},
     { "DEC", DEC},
 
+    { ".FILL", FILL},
+    { ".SPACE", SPACE},
+
     { NULL, 0}
 };
 
-#define BUF_SIZE 256
-
-//
 // get options from the command line
-//
 int getopt(int n, char *args[])
 {
 	int i;

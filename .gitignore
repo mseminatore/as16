@@ -33,6 +33,7 @@
 as16
 
 # Yacc/Bison files
-y.tab.c
+#y.tab.c
+#y.tab.h
 y.output
 
