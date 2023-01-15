@@ -6,7 +6,13 @@
 #include <stdint.h>
 #include <assert.h>
 
+// command line switches
+const char * g_szOutputFilename = "a.out";
+int g_bDebug = 0;
+
 int lineno = 1;
+
+FILE *yyin = NULL;
 
 int yylex();
 void yyerror(char*);
@@ -54,7 +60,6 @@ void add_fixup(int symbol, int addr, int type);
 // accumulate generated code
 void emit(uint16_t v)
 {
-//    printf("%04X\n", v);
     code[addr] = v;
     addr++;
 }
@@ -144,7 +149,7 @@ lines:
     | line lines
     ;
 
-line: label instruction     {  }
+line: label instruction     {}
     ;
 
 label:
@@ -152,7 +157,7 @@ label:
     ;
 
 rel7: NUMBER    { $$ = $1 & MASK_7b; }
-    | ID        { if (symbols[$1].type == ST_UNDEF) { add_fixup($1, addr, FIXUP_REL7); $$ = 0; } else { printf("target addr %d, inst addr %d\n", symbols[$1].value, addr); $$ = (symbols[$1].value & MASK_7b) - (addr + 1);  }/* return symbol value */ }
+    | ID        { if (symbols[$1].type == ST_UNDEF) { add_fixup($1, addr, FIXUP_REL7); $$ = 0; } else $$ = (symbols[$1].value & MASK_7b) - (addr + 1); /* return symbol value */ }
     ;
 
 imm7: NUMBER    { $$ = $1 & MASK_7b; }
@@ -244,10 +249,32 @@ Tokens tokens[] =
 
 #define BUF_SIZE 256
 
+//
+// get options from the command line
+//
+int getopt(int n, char *args[])
+{
+	int i;
+	for (i = 1; args[i][0] == '-'; i++)
+	{
+		if (args[i][1] == 'v')
+			g_bDebug = 1;
+
+		if (args[i][1] == 'o')
+		{
+			g_szOutputFilename = args[i + 1];
+			i++;
+		}
+	}
+
+	return i;
+}
+
 // add a fixup
 void add_fixup(int symbol, int addr, int type)
 {
-    printf("adding %s fixup for %s @ addr %d\n", fixup_names[type], symbols[symbol].name, addr);
+    if (g_bDebug)
+        printf("adding %s fixup for %s @ addr %d\n", fixup_names[type], symbols[symbol].name, addr);
 
     fixups[fixup_count].symbol  = symbol;
     fixups[fixup_count].addr    = addr;
@@ -259,12 +286,14 @@ void add_fixup(int symbol, int addr, int type)
 // apply fixups
 void apply_fixups()
 {
-    printf("%d fixups found.\n", fixup_count);
+     if (g_bDebug)
+        printf("%d fixups found.\n", fixup_count);
 
     for (int i = 0; i < fixup_count; i++)
     {
         Fixup_t f = fixups[i];
-        printf("fixing up %s reference to %s @ addr %d\n", fixup_names[f.type], symbols[fixups[i].symbol].name, fixups[i].addr);
+        if (g_bDebug)
+            printf("fixing up %s reference to %s @ addr %d\n", fixup_names[f.type], symbols[fixups[i].symbol].name, fixups[i].addr);
 
         switch(f.type)
         {
@@ -339,11 +368,11 @@ void skipToEOL(void)
 
 	// skip to EOL
 	do {
-		c = getchar();
+		c = getc(yyin);
 	} while (c != '\n' && c != EOF);
 
 	// put last character back
-	ungetc(c, stdin);
+	ungetc(c, yyin);
 }
 
 //==================================
@@ -353,11 +382,11 @@ int follow(int expect, int ifyes, int ifno)
 {
 	int chr;
 
-	chr = getchar();
+	chr = getc(yyin);
 	if (chr == expect)
 		return ifyes;
 
-	ungetc(chr, stdin);
+	ungetc(chr, yyin);
 	return ifno;
 }
 
@@ -372,27 +401,27 @@ int getNumber()
 	int base = 10;
 
 	// look for hex numbers
- 	c = getchar();
+ 	c = getc(yyin);
 	if (c == '$' || (c == '0' && (follow('X', 1, 0) || follow('x', 1, 0))))
 		base = 16;
 	else if (c == '-' || c == '+')
 		*bufptr++ = c;
 	else
-		ungetc(c, stdin);
+		ungetc(c, yyin);
 
 	if (base == 16)
 	{
-		while (isxdigit(c = getchar()))
+		while (isxdigit(c = getc(yyin)))
 			*bufptr++ = c;
 	}
 	else
 	{
-		while (isdigit((c = getchar())) || c == '.')
+		while (isdigit((c = getc(yyin))) || c == '.')
 			*bufptr++ = c;
 	}
 	
 	// need to put back the last character
-	ungetc(c, stdin);
+	ungetc(c, yyin);
 
 	// make sure string is asciiz
 	*bufptr = '\0';
@@ -426,7 +455,7 @@ int yylex()
 
 yylex01:
     // skip leading whitespace
-    while ((c = getchar()) == ' ' || c == '\t');
+    while ((c = getc(yyin)) == ' ' || c == '\t');
 
     // see if input is empty
     if (c == EOF)
@@ -442,7 +471,7 @@ yylex01:
 	// look for a number value
 	if (isdigit(c) || c == '-' || c == '+')
 	{
-		ungetc(c, stdin);
+		ungetc(c, yyin);
 		return getNumber();
 	}
 
@@ -453,10 +482,10 @@ yylex01:
 
         do {
             *p++ = c;
-        } while ((c=getchar()) != EOF && (c == '_' || isalnum(c)));
+        } while ((c=getc(yyin)) != EOF && (c == '_' || isalnum(c)));
         
         // put back the last character!
-        ungetc(c, stdin);
+        ungetc(c, yyin);
 
         // be sure to null terminate the string
         *p = 0;
@@ -472,14 +501,17 @@ yylex01:
         if (sym != -1)
         {
             yylval.symbol = sym;
-            printf("existing symbol: %s (%d)\n", buf, sym);
+            if (g_bDebug)
+                printf("existing symbol: %s (%d)\n", buf, sym);
             return ID;
         }
 
         sym = add_symbol(buf, lineno);
 
         yylval.symbol = sym;
-        printf("new symbol: %s (%d)\n", buf, sym);
+        if (g_bDebug)
+            printf("new symbol: %s (%d)\n", buf, sym);
+    
         return ID;
     }
 
@@ -501,15 +533,38 @@ void write_file()
         fprintf(fout, "%04X\n", code[i]);
 }
 
+//
+void usage()
+{
+	puts("\nusage: as16 [options] filename\n");
+	puts("-v\tverbose output");
+	puts("-o file\tset output filename\n");
+
+	exit(0);
+
+}
+
+extern FILE *yyin;
+
 //========================
 // main entry point
 //========================
 int main(int argc, char *argv[])
 {
+    if (argc == 1)
+		usage();
+
+	int iFirstArg = getopt(argc, argv);
+
+//    if (strcasecmp("--", argv[iFirstArg]))
+        yyin = fopen(argv[iFirstArg], "rt");
+//    else
+//        yyin = stdin;
+
     // set this to 0 to disable parser debugging
     yydebug = 0;
 
-    fout = fopen("a.out", "wb");
+    fout = fopen(g_szOutputFilename, "wb");
 
     yyparse();
 
@@ -517,6 +572,11 @@ int main(int argc, char *argv[])
     write_file();
 
     fclose(fout);
+
+    if (yyin != stdin)
+        fclose(yyin);
+
+    printf("\nSuccessfully assembled %d instructions to %s\n\n", addr, g_szOutputFilename);
 
     return 0;
 }
