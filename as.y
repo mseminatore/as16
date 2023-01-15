@@ -71,7 +71,15 @@ enum
 enum
 {
     FIXUP_IMM7,
-    FIXUP_IMM10
+    FIXUP_IMM10,
+    FIXUP_IMM6,
+};
+
+const char *fixup_names[] =
+{
+    "IMM7",
+    "IMM10",
+    "IMM6"
 };
 
 typedef struct
@@ -145,7 +153,7 @@ imm10: NUMBER   { $$ = $1 & MASK_10b; }
     ;
 
 imm: NUMBER
-    | ID        { $$ = symbols[$1].value; /* return symbol value */ }
+    | ID        { if (symbols[$1].type == ST_UNDEF) { add_fixup($1, addr, FIXUP_IMM10); add_fixup($1, addr + 1, FIXUP_IMM6); $$ = 0; } else $$ = symbols[$1].value; /* return symbol value */ }
     ;
 
 instruction: ADD register ',' register ',' register     { emit(rrr(OP_ADD, $2, $4, $6)); }
@@ -224,7 +232,7 @@ Tokens tokens[] =
 // add a fixup
 void add_fixup(int symbol, int addr, int type)
 {
-    printf("adding fixup for %s\n", symbols[symbol].name);
+    printf("adding %s fixup for %s @ addr %d\n", fixup_names[type], symbols[symbol].name, addr);
 
     fixups[fixup_count].symbol  = symbol;
     fixups[fixup_count].addr    = addr;
@@ -240,7 +248,27 @@ void apply_fixups()
 
     for (int i = 0; i < fixup_count; i++)
     {
-        printf("fixing up reference to %s\n", symbols[fixups[i].symbol].name);
+        Fixup_t f = fixups[i];
+        printf("fixing up %s reference to %s @ addr %d\n", fixup_names[f.type], symbols[fixups[i].symbol].name, fixups[i].addr);
+
+        switch(f.type)
+        {
+        case FIXUP_IMM10:
+            code[f.addr] |= symbols[f.symbol].value & MASK_10b;
+            break;
+
+        case FIXUP_IMM7:
+            code[f.addr] |= symbols[f.symbol].value & MASK_7b;
+            break;
+
+        case FIXUP_IMM6:
+            code[f.addr] |= symbols[f.symbol].value & MASK_6b;
+            break;
+
+
+        default:
+            assert(0);
+        }
     }
 }
 
@@ -423,7 +451,7 @@ yylex01:
         if (sym != -1)
         {
             yylval.symbol = sym;
-            printf("existing symbol found: %s (%d)\n", buf, sym);
+            printf("existing symbol: %s (%d)\n", buf, sym);
             return ID;
         }
 
