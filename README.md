@@ -20,6 +20,13 @@ The `as16` assembler also adds several extensions in the form of
 additional pseudo-instructions. I've found these extensions to be helpful when
 writing significant amounts of RiSC-16 assembly by hand.
 
+Like the original assembler the default output format is machine code in 16b hex.
+In future releases I may implement direct Verilog rom file generation as well as
+`a.out` object file generation and linking.
+
+Running `as16` without any other parameters will display usage information 
+including the documented command line switches.
+
 ## Original Instructions
 
 Mnemonic | Assembly Format | Action
@@ -84,6 +91,6 @@ There are a few additional changes that I would still like to make to `as16`. Th
 in no particular order:
 
 * Allow Verilog rom file output 
-* Allow a.out object file generation (see [bintools](https://github.com/mseminatore/bintools))
+* Allow a.out object file generation (see my [bintools](https://github.com/mseminatore/bintools) project)
 * Create a linker for RiSC-16 object files
 
