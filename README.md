@@ -10,15 +10,16 @@ As part of the design validation phase I used the assembler quite a bit to
 write test code. In doing so, I found that there were several improvements 
 that I wanted to make for productivity.
 
-Rather than modify the original assembler code I implemented `as16` using 
-Bison. The original assembler used 2 passes over the source code to resolve 
-forward references. In my implementation I use a list of code fixups to track 
-locations where back-patching of forward references is needed. The fixup pass 
-takes place after a single pass through the source code.
+Rather than modify the original assembler code, I re-implemented the assembler 
+as `as16` using Yacc/Bison. The original assembler used 2 passes over the 
+source code to resolve forward references. In this implementation, I use a list 
+of code fixups to track locations where back-patching of forward references is 
+needed. The fixup pass takes place after a single pass through the source code
+is completed.
 
 The `as16` assembler also adds several extensions in the form of 
 additional pseudo-instructions. I've found these extensions to be helpful when
-writing significant amounts of RiSC-16 assembly by hand.
+writing non-trivial amounts of RiSC-16 assembly by hand.
 
 Like the original assembler the default output format is machine code in 16b hex.
 In future releases I may implement direct Verilog rom file generation as well as
