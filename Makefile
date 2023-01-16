@@ -14,4 +14,4 @@ as.o:	y.tab.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 clean:
-	rm *.o y.tab.c y.output
+	rm $(TARGET) a.out *.o y.tab.c y.tab.h y.output
