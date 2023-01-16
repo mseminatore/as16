@@ -1,6 +1,6 @@
 # as16 - an enhanced assembler for the RiSC-16 Processor
 
-This is a simple assembler for the RiSC-16 processor developed by
+This is a simple assembler for the RiSC-16 processor design developed by
 Professor [Bruce Jacob](https://user.eng.umd.edu/~blj/RiSC/). This assembler is
 fully source compatible with the original `a` assembler provided 
 by Professor Jacob [here](https://user.eng.umd.edu/~blj/RiSC/a.c).
@@ -30,9 +30,9 @@ including the documented command line switches.
 
 ## Assembler Source Code
 
-The source includes a Makefile which should work on any Unix-like operating 
+The source includes a Makefile which should build on any Unix-like operating 
 system. The project requires `YACC` or `Bison` to compile. For expediencey on 
-machines without these tools (ahem Windows) I've included the resulting 
+machines without these tools (ahem Windows), I've included the resulting 
 y.tab.c and y.tab.h files.
 
 ## Original Instructions
