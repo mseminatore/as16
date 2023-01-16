@@ -11,13 +11,14 @@
 // command line switches
 const char * g_szOutputFilename = "a.out";
 int g_bDebug = 0;
-
+int g_bSyncROM = 0;
+int g_bROM = 0;
 int lineno = 1;
 
 FILE *yyin = NULL;
 FILE *fout = NULL;
 
-uint16_t inst;
+//uint16_t inst;
 uint16_t addr = 0;
 
 uint16_t code[MAX_CODE];
@@ -196,6 +197,15 @@ int getopt(int n, char *args[])
 	{
 		if (args[i][1] == 'v')
 			g_bDebug = 1;
+
+        if (args[i][1] == 'r')
+            g_bROM = 1;
+
+        if (args[i][1] == 's')
+        {
+            g_bROM = 1;
+            g_bSyncROM = 1;
+        }
 
 		if (args[i][1] == 'o')
 		{
@@ -479,10 +489,72 @@ void usage()
 	puts("\nusage: as16 [options] filename\n");
     puts("-i\tget input from stdin");
 	puts("-v\tverbose output");
-	puts("-o file\tset output filename\n");
-
+	puts("-o file\tset output filename");
+    puts("-r\tgenerate Verilog rom file");
+    puts("-s\tgenerate synchronous Verilog\n");
 	exit(0);
 
+}
+
+// generate template prologue
+void prologue(FILE *f, int addr_bits, int data_bits) 
+{
+    fprintf(f, "`timescale 1ns / 1ps\n\n");
+    fprintf(f, "module rom\n");
+    fprintf(f, "(\n");
+
+    if (g_bSyncROM)
+        fprintf(f, "\tinput wire clk,\n");
+
+    fprintf(f, "\tinput wire [%d : 0] addr,\n"
+        "\toutput reg [%d : 0] data\n"
+        ");\n\n", 
+        addr_bits - 1,
+        data_bits - 1
+    );
+
+    if (g_bSyncROM)
+        fprintf(f, "\treg [%d : 0] addr_reg;\n\n"
+            "\t// Sequential logic\n"
+            "\talways @(posedge clk)\n"
+            "\t\taddr_reg <= addr;\n\n",
+            addr_bits - 1
+        );
+
+    fprintf(f, "\t// Combinational logic\n"
+        "\talways @*\n"
+    );
+
+    if (g_bSyncROM)
+        fprintf(f, "\t\tcase (addr_reg)\n");
+    else
+        fprintf(f, "\t\tcase (addr)\n");
+}
+
+// generate template epilog
+void epilog(FILE *f) 
+{
+    fputs("\t\tendcase\n", f);
+    fputs("endmodule\n", f);
+}
+
+// generate ROM data
+void romgen(FILE *fout, int addr_bits, int data_bits)
+{
+    int num;
+
+    prologue(fout, addr_bits, data_bits);
+
+    // loop over the code and output Verilog
+    for (int i = 0; i < addr; i++)
+    {
+        num = code[i];
+        fprintf(fout, "\t\t\t%d'd%d: data = %d'h%x;\t// $%X\n", addr_bits, i, data_bits, num, num);
+    }
+    
+    fprintf(fout, "\t\t\tdefault: data = %d'd0;\n", data_bits);
+
+    epilog(fout);
 }
 
 //========================
@@ -503,10 +575,16 @@ int main(int argc, char *argv[])
 
     fout = fopen(g_szOutputFilename, "wb");
 
+    // parse the input file
     yyparse();
 
+    // fixup any forward references
     apply_fixups();
-    write_file();
+
+    if (g_bROM)
+        romgen(fout, 10, 16);
+    else
+        write_file();
 
     fclose(fout);
 

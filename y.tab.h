@@ -118,7 +118,7 @@
 
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 typedef union YYSTYPE
-#line 57 "as.y"
+#line 58 "as.y"
 {
     int ival;
     int symbol;
