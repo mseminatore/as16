@@ -79,14 +79,15 @@ EQU | label EQU value | Associate the label name with the numeric constant value
 
 ## Register aliases
 
-In writing RiSC-16 code I found that I wanted to establish an ABI for myself. The
-convention I chose was that I would use R7 as a stack pointer and that R6 would be
-used as a link register. To make this usage clearer in assembly code I created the
-register aliases `SP` (R7) and `LR` (R6) which can be used anywhere a register is accepted.
+In writing RiSC-16 code I found that I wanted to establish calling conventions 
+(ABI) for myself. The convention I chose was that I would use R7 as a stack 
+pointer and that R6 would be used as a link register. To make this usage 
+clearer in assembly code I created the register aliases `SP` (R7) and `LR` (R6)
+which can be used anywhere a register is accepted.
 
 ## Additional Pseudo-instructions
 
-The as16 assembly adds the following new pseudo-instructions to those above.
+The `as16` assembler adds the following new and optional pseudo-instructions.
 
 Mnemonic | Assembly Format | Action
 ---------|-----------------|-------
