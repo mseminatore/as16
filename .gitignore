@@ -37,3 +37,9 @@ as16
 #y.tab.h
 y.output
 
+bison.simple
+bison.hairy
+*.filters
+*.db
+*.opendb
+Debug
