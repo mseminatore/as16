@@ -13,9 +13,9 @@ that I wanted to make for productivity.
 Rather than modify the original assembler code, I re-implemented the assembler 
 as `as16` using Yacc/Bison. The original assembler used 2 passes over the 
 source code to resolve forward references. In this implementation, I use a list 
-of code fixups to track locations where back-patching of forward references is 
-needed. The fixup pass takes place after a single pass through the source code
-is completed.
+of code fixups to track locations where back-patching of code containing 
+forward references is needed. The fixup phase takes place after a single pass 
+through the source code is completed.
 
 The `as16` assembler also adds several extensions in the form of 
 additional pseudo-instructions. I've found these extensions to be helpful when
