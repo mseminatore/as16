@@ -1,14 +1,14 @@
-# as16 - an assembler for the RiSC-16 Processor
+# as16 - an enhanced assembler for the RiSC-16 Processor
 
-This is a simple assembler for the RiSC-16 processore developed by
+This is a simple assembler for the RiSC-16 processor developed by
 Professor [Bruce Jacob](https://user.eng.umd.edu/~blj/RiSC/). This assembler is
-source compatible with the original `a` assembler provided 
+fully source compatible with the original `a` assembler provided 
 by Professor Jacob [here](https://user.eng.umd.edu/~blj/RiSC/a.c).
 
-I recently implemented the RiSC-16 processor in an FPGA. As part of the design
-validation phase I used the assembler quite a bit to write test code. In doing
-so, I found that there were several improvements that I wanted to make for 
-productivity.
+I recently implemented the RiSC-16 processor in Verilog on a Basys-3 FPGA. 
+As part of the design validation phase I used the assembler quite a bit to 
+write test code. In doing so, I found that there were several improvements 
+that I wanted to make for productivity.
 
 Rather than modify the original assembler code I implemented `as16` using 
 Bison. The original assembler used 2 passes over the source code to resolve 
