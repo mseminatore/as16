@@ -27,7 +27,7 @@ In future releases I may implement direct Verilog rom file generation as well as
 Running `as16` without any other parameters will display usage information 
 including the documented command line switches.
 
-## Source Code
+## Assembler Source Code
 
 The source includes a Makefile which should work on any Unix-like operating 
 system. The project requires `YACC` or `Bison` to compile. For expediencey on 
@@ -60,6 +60,11 @@ lli | lli rA, imm | Load lower 6 bits of imm in regA by ORing with regA
 movi | movi rA, imm | Equivalent to lui + lli of imm to regA
 .fill | .fill imm | Initialize data with value imm
 .space | .space imm | Zero-fill an array of size imm
+
+## Label Extensions
+
+As an extension to the original assembler, labels can appear on a line by themselves 
+in addition to being associated with an instruction.
 
 ## Equates
 
