@@ -3,7 +3,13 @@
 This is a simple assembler for the RiSC-16 processor design developed by
 Professor [Bruce Jacob](https://user.eng.umd.edu/~blj/RiSC/). This assembler is
 fully source compatible with the original `a` assembler provided 
-by Professor Jacob [here](https://user.eng.umd.edu/~blj/RiSC/a.c).
+by Professor Jacob [here](https://user.eng.umd.edu/~blj/RiSC/a.c). Beyond that
+it adds several extensions that I found useful.
+
+I also created a disassembler `disasm` which helped in round-trip debugging
+of the assembler.
+
+## Why as16?
 
 I recently implemented the RiSC-16 processor in Verilog on a Basys-3 FPGA. 
 As part of the design validation phase I used the assembler quite a bit to 
