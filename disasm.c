@@ -7,6 +7,9 @@
 #include <assert.h>
 
 int g_bHex = 1;
+int g_bRegisterAliases = 0;
+
+#define MAX_BUFFER 1024
 
 //
 static const char *regs[] = {"r0", "r1", "r2", "r3", "r4", "r5", "lr", "sp"};
@@ -48,7 +51,7 @@ typedef struct
 //
 void usage()
 {
-	printf("disasm filename\n\n");
+	printf("\nusage: disasm filename\n\n");
 	exit(0);
 }
 
@@ -59,48 +62,48 @@ void diasm(int addr, unsigned short val)
 	RRR_type *rrr = (RRR_type*)&val;
 	RRI_type *rri = (RRI_type*)&val;
 	RI_type *ri = (RI_type*)&val;
-	Inst_type *inst = (Inst_type*)&val;
+//	Inst_type *inst = (Inst_type*)&val;
 
 	switch (opcode)
 	{
 	case 0:
 	case 2:
-		printf("%04x\t%s\t%s, %s, %s\n", addr, ops[opcode], regs[rrr->rega], regs[rrr->regb], regs[rrr->regc]);
+		printf("%04X\t%04X\t%s\t%s, %s, %s\n", addr, val, ops[opcode], regs[rrr->rega], regs[rrr->regb], regs[rrr->regc]);
 		break;
 
 	case 1:
 	case 4:
 	case 5:
-		printf("%04x\t%s\t%s, %s, $%02x\t# decimal %d\n", addr, ops[opcode], regs[rri->rega], regs[rri->regb], rri->imm7, rri->imm7);
+		printf("%04X\t%04X\t%s\t%s, %s, $%02x\t# decimal %d\n", addr, val, ops[opcode], regs[rri->rega], regs[rri->regb], rri->imm7, rri->imm7);
 		break;
 
 	case 6:
-		printf("%04x\t%s\t%s, %s, %d\t# dest addr %04x\n", addr, ops[opcode], regs[rri->rega], regs[rri->regb], rri->imm7, addr + 1 + rri->imm7);
+		printf("%04X\t%04X\t%s\t%s, %s, %d\t# dest addr %04x\n", addr, val, ops[opcode], regs[rri->rega], regs[rri->regb], rri->imm7, addr + 1 + rri->imm7);
 		break;
 
 	case 3:
-		printf("%04x\t%s\t%s, $%02x\t\t# decimal %d\n", addr, ops[opcode], regs[ri->rega], ri->imm10, ri->imm10);
+		printf("%04X\t%04X\t%s\t%s, $%02x\t\t# decimal %d\n", addr, val, ops[opcode], regs[ri->rega], ri->imm10, ri->imm10);
 		break;
 
 	case 7:
-		printf("%04x\t%s\t%s, %s\n", addr, ops[opcode], regs[rri->rega], regs[rri->regb]);
+		printf("%04X\t%04X\t%s\t%s, %s\n", addr, val, ops[opcode], regs[rri->rega], regs[rri->regb]);
 		break;
 
 	default:
-		assert(0);
+		printf("%04X\t%04X\t%s\t%04X\n", addr, val, "dw", val);
 	}
 }
 
 //
 void decode(FILE *f)
 {
-	char buf[1024];
+	char buf[MAX_BUFFER];
 	char *s;
 	int num;
 	int addr = 0;
 
 	// read a line
-	while (fgets(buf, 1023, f)) {
+	while (fgets(buf, MAX_BUFFER - 1, f)) {
 		// tokenize the line
 		s = strtok(buf, "\t ");
 
@@ -135,6 +138,12 @@ int main(int argc, char *argv[])
 		usage();
 
 	FILE *f = fopen(argv[1], "rt");
+
+	printf(
+		"\nRiSC-16 processor disassembler\n\n"
+		"addr\tinst\tdisassembly\n"
+		"----\t----\t-----------\n"
+	);
 
 	decode(f);
 	

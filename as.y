@@ -23,6 +23,7 @@ int g_bSyncROM = 1;
 int g_bROM = 0;
 int g_bSystemV = 0;
 int lineno = 1;
+int err_count = 0;
 
 FILE *yyin = NULL;
 FILE *fout = NULL;
@@ -94,7 +95,7 @@ equates:
     | equates equate
     ;
 
-equate: ID EQU NUMBER         { assert(symbols[$1].type == ST_UNDEF); symbols[$1].value = $3; symbols[$1].type = ST_EQU; }
+equate: ID EQU NUMBER         { if(symbols[$1].type != ST_UNDEF) yyerror("duplicate symbol"); symbols[$1].value = $3; symbols[$1].type = ST_EQU; }
     ;
 
 lines:
@@ -161,6 +162,7 @@ register: R0    { $$ = 0; }
 
 %%
 
+// define our keyword token table
 Tokens tokens[] =
 {
     {"ADD", ADD},
@@ -203,6 +205,15 @@ Tokens tokens[] =
 
     { NULL, 0}
 };
+
+//========================
+// error routine
+//========================
+void yyerror(char *s)
+{
+    fprintf(stderr, "error: %s near line %d\n", s, lineno);
+    err_count++;
+}
 
 // get options from the command line
 int getopt(int n, char *args[])
@@ -249,6 +260,8 @@ int getopt(int n, char *args[])
 // add a fixup
 void add_fixup(int symbol, int addr, int type)
 {
+    assert(fixup_count < MAX_FIXUPS);
+
     if (g_bDebug)
         printf("adding %s fixup for %s @ addr %d\n", fixup_names[type], symbols[symbol].name, addr);
 
@@ -271,6 +284,14 @@ void apply_fixups()
         if (g_bDebug)
             printf("fixing up %s reference to %s @ addr %d\n", fixup_names[f.type], symbols[fixups[i].symbol].name, fixups[i].addr);
 
+        // check that the symbols was defined
+        if (symbols[f.symbol].type == ST_UNDEF)
+        {
+            fprintf(stderr, "error: undefined symbol %s near line %d\n", symbols[f.symbol].name, symbols[f.symbol].lineno);
+            err_count++;
+            continue;
+        }
+
         switch(f.type)
         {
         case FIXUP_IMM10:
@@ -290,6 +311,7 @@ void apply_fixups()
             break;
 
         case FIXUP_REL7:
+            code[f.addr] |= (symbols[f.symbol].value - (f.addr + 1)) & MASK_7b;
             break;
 
         default:
@@ -314,6 +336,8 @@ int lookup_symbol(const char *name)
 // add a new symbols
 int add_symbol(const char *name, int lineno)
 {
+    assert(symbol_count < MAX_SYMBOLS);
+
     // error if symbol already exists
     if (lookup_symbol(name) > 0)
         return -1;
@@ -325,14 +349,6 @@ int add_symbol(const char *name, int lineno)
 
     symbol_count++;
     return symbol_count - 1;
-}
-
-//========================
-// error routine
-//========================
-void yyerror(char *s)
-{
-    fprintf(stderr, "error: %s near line %d\n", s, lineno);
 }
 
 //========================
@@ -638,8 +654,10 @@ int main(int argc, char *argv[])
 
     if (yyin != stdin)
         fclose(yyin);
-
-    printf("\nSuccessfully assembled %d instructions to %s\n\n", addr, g_szOutputFilename);
+    
+    printf("\nAssembled %d instructions to %s\n", addr, g_szOutputFilename);
+    if (err_count)
+        printf("%d errors found.\n\n", err_count);
 
     return 0;
 }

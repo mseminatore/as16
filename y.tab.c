@@ -162,6 +162,7 @@ int g_bSyncROM = 1;
 int g_bROM = 0;
 int g_bSystemV = 0;
 int lineno = 1;
+int err_count = 0;
 
 FILE *yyin = NULL;
 FILE *fout = NULL;
@@ -228,14 +229,14 @@ int fixup_count = 0;
 
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 typedef union YYSTYPE
-#line 73 "as.y"
+#line 74 "as.y"
 {
     int ival;
     int symbol;
     char *lexeme;
 }
 /* Line 193 of yacc.c.  */
-#line 239 "y.tab.c"
+#line 240 "y.tab.c"
 	YYSTYPE;
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1
@@ -248,7 +249,7 @@ typedef union YYSTYPE
 
 
 /* Line 216 of yacc.c.  */
-#line 252 "y.tab.c"
+#line 253 "y.tab.c"
 
 #ifdef short
 # undef short
@@ -552,11 +553,11 @@ static const yytype_int8 yyrhs[] =
 /* YYRLINE[YYN] -- source line where rule number YYN was defined.  */
 static const yytype_uint8 yyrline[] =
 {
-       0,    90,    90,    93,    94,    97,   100,   101,   104,   107,
-     108,   111,   112,   115,   116,   119,   120,   123,   124,   127,
-     128,   129,   130,   131,   132,   133,   134,   135,   136,   137,
-     138,   139,   140,   141,   142,   143,   144,   145,   146,   147,
-     150,   151,   152,   153,   154,   155,   156,   157,   158,   159
+       0,    91,    91,    94,    95,    98,   101,   102,   105,   108,
+     109,   112,   113,   116,   117,   120,   121,   124,   125,   128,
+     129,   130,   131,   132,   133,   134,   135,   136,   137,   138,
+     139,   140,   141,   142,   143,   144,   145,   146,   147,   148,
+     151,   152,   153,   154,   155,   156,   157,   158,   159,   160
 };
 #endif
 
@@ -1518,213 +1519,213 @@ yyreduce:
   switch (yyn)
     {
         case 5:
-#line 97 "as.y"
-    { assert(symbols[(yyvsp[(1) - (3)].symbol)].type == ST_UNDEF); symbols[(yyvsp[(1) - (3)].symbol)].value = (yyvsp[(3) - (3)].ival); symbols[(yyvsp[(1) - (3)].symbol)].type = ST_EQU; }
+#line 98 "as.y"
+    { if(symbols[(yyvsp[(1) - (3)].symbol)].type != ST_UNDEF) yyerror("duplicate symbol"); symbols[(yyvsp[(1) - (3)].symbol)].value = (yyvsp[(3) - (3)].ival); symbols[(yyvsp[(1) - (3)].symbol)].type = ST_EQU; }
     break;
 
   case 8:
-#line 104 "as.y"
+#line 105 "as.y"
     { /* empty action needed here for now */ }
     break;
 
   case 10:
-#line 108 "as.y"
+#line 109 "as.y"
     { assert(symbols[(yyvsp[(1) - (2)].symbol)].type == ST_UNDEF); symbols[(yyvsp[(1) - (2)].symbol)].value = addr; symbols[(yyvsp[(1) - (2)].symbol)].type = ST_LABEL; }
     break;
 
   case 11:
-#line 111 "as.y"
+#line 112 "as.y"
     { (yyval.ival) = (yyvsp[(1) - (1)].ival) & MASK_7b; }
     break;
 
   case 12:
-#line 112 "as.y"
+#line 113 "as.y"
     { if (symbols[(yyvsp[(1) - (1)].symbol)].type == ST_UNDEF) { add_fixup((yyvsp[(1) - (1)].symbol), addr, FIXUP_REL7); (yyval.ival) = 0; } else (yyval.ival) = (symbols[(yyvsp[(1) - (1)].symbol)].value & MASK_7b) - (addr + 1); /* return symbol value */ }
     break;
 
   case 13:
-#line 115 "as.y"
+#line 116 "as.y"
     { (yyval.ival) = (yyvsp[(1) - (1)].ival) & MASK_7b; }
     break;
 
   case 14:
-#line 116 "as.y"
+#line 117 "as.y"
     { if (symbols[(yyvsp[(1) - (1)].symbol)].type == ST_UNDEF) { add_fixup((yyvsp[(1) - (1)].symbol), addr, FIXUP_IMM7); (yyval.ival) = 0; } else (yyval.ival) = symbols[(yyvsp[(1) - (1)].symbol)].value & MASK_7b; /* return symbol value */ }
     break;
 
   case 15:
-#line 119 "as.y"
+#line 120 "as.y"
     { (yyval.ival) = (yyvsp[(1) - (1)].ival) & MASK_10b; }
     break;
 
   case 16:
-#line 120 "as.y"
+#line 121 "as.y"
     { if (symbols[(yyvsp[(1) - (1)].symbol)].type == ST_UNDEF) { add_fixup((yyvsp[(1) - (1)].symbol), addr, FIXUP_IMM10); (yyval.ival) = 0; } else (yyval.ival) = symbols[(yyvsp[(1) - (1)].symbol)].value & MASK_10b; /* return symbol value*/ }
     break;
 
   case 18:
-#line 124 "as.y"
+#line 125 "as.y"
     { if (symbols[(yyvsp[(1) - (1)].symbol)].type == ST_UNDEF) { add_fixup((yyvsp[(1) - (1)].symbol), addr, FIXUP_IMM10_HI); add_fixup((yyvsp[(1) - (1)].symbol), addr + 1, FIXUP_IMM6); (yyval.ival) = 0; } else (yyval.ival) = symbols[(yyvsp[(1) - (1)].symbol)].value; /* return symbol value */ }
     break;
 
   case 19:
-#line 127 "as.y"
+#line 128 "as.y"
     { emit(rrr(OP_ADD, (yyvsp[(2) - (6)].ival), (yyvsp[(4) - (6)].ival), (yyvsp[(6) - (6)].ival))); }
     break;
 
   case 20:
-#line 128 "as.y"
+#line 129 "as.y"
     { emit(rri(OP_ADDI, (yyvsp[(2) - (6)].ival), (yyvsp[(4) - (6)].ival), (yyvsp[(6) - (6)].ival))); }
     break;
 
   case 21:
-#line 129 "as.y"
+#line 130 "as.y"
     { emit(rrr(OP_NAND, (yyvsp[(2) - (6)].ival), (yyvsp[(4) - (6)].ival), (yyvsp[(6) - (6)].ival))); }
     break;
 
   case 22:
-#line 130 "as.y"
+#line 131 "as.y"
     { emit(ri(OP_LUI, (yyvsp[(2) - (4)].ival), (yyvsp[(4) - (4)].ival))); }
     break;
 
   case 23:
-#line 131 "as.y"
+#line 132 "as.y"
     { emit(rri(OP_SW, (yyvsp[(2) - (6)].ival), (yyvsp[(4) - (6)].ival), (yyvsp[(6) - (6)].ival))); }
     break;
 
   case 24:
-#line 132 "as.y"
+#line 133 "as.y"
     { emit(rri(OP_LW, (yyvsp[(2) - (6)].ival), (yyvsp[(4) - (6)].ival), (yyvsp[(6) - (6)].ival))); }
     break;
 
   case 25:
-#line 133 "as.y"
+#line 134 "as.y"
     { emit(rri(OP_BEQ, (yyvsp[(2) - (6)].ival), (yyvsp[(4) - (6)].ival), (yyvsp[(6) - (6)].ival))); }
     break;
 
   case 26:
-#line 134 "as.y"
+#line 135 "as.y"
     { emit(rri(OP_JALR, (yyvsp[(2) - (4)].ival), (yyvsp[(4) - (4)].ival), 0)); }
     break;
 
   case 27:
-#line 135 "as.y"
+#line 136 "as.y"
     { emit(rri(OP_JALR, 0, 6, 0)); }
     break;
 
   case 28:
-#line 136 "as.y"
+#line 137 "as.y"
     { emit(rri(OP_ADDI, 7, 7, -1)); emit(rri(OP_SW, (yyvsp[(2) - (2)].ival), 7, 0)); }
     break;
 
   case 29:
-#line 137 "as.y"
+#line 138 "as.y"
     { emit(rri(OP_LW, (yyvsp[(2) - (2)].ival), 7, 0)); emit(rri(OP_ADDI, 7, 7, 1)); }
     break;
 
   case 30:
-#line 138 "as.y"
+#line 139 "as.y"
     { emit(rri(OP_JALR, 0, (yyvsp[(2) - (2)].ival), 0)); }
     break;
 
   case 31:
-#line 139 "as.y"
+#line 140 "as.y"
     { emit(rri(OP_JALR, 6, (yyvsp[(2) - (2)].ival), 0)); }
     break;
 
   case 32:
-#line 140 "as.y"
+#line 141 "as.y"
     { emit(ri(OP_LUI, (yyvsp[(2) - (4)].ival), ((yyvsp[(4) - (4)].ival) & 0xffc0) >> 6)); emit(rri(OP_ADDI, (yyvsp[(2) - (4)].ival), (yyvsp[(2) - (4)].ival), (yyvsp[(4) - (4)].ival) & MASK_6b)); }
     break;
 
   case 33:
-#line 141 "as.y"
+#line 142 "as.y"
     { emit(rri(OP_ADDI, (yyvsp[(2) - (4)].ival), (yyvsp[(2) - (4)].ival), (yyvsp[(4) - (4)].ival) & 0x3f)); }
     break;
 
   case 34:
-#line 142 "as.y"
+#line 143 "as.y"
     { emit(rrr(OP_ADD, 0, 0, 0)); }
     break;
 
   case 35:
-#line 143 "as.y"
+#line 144 "as.y"
     { emit(rri(OP_ADDI, (yyvsp[(2) - (2)].ival), (yyvsp[(2) - (2)].ival), 1)); }
     break;
 
   case 36:
-#line 144 "as.y"
+#line 145 "as.y"
     { emit(rri(OP_ADDI, (yyvsp[(2) - (2)].ival), (yyvsp[(2) - (2)].ival), -1)); }
     break;
 
   case 37:
-#line 145 "as.y"
+#line 146 "as.y"
     { emit((yyvsp[(2) - (2)].ival)); }
     break;
 
   case 38:
-#line 146 "as.y"
+#line 147 "as.y"
     { for(int i = 0; i < (yyvsp[(2) - (2)].ival); i++) emit(0); }
     break;
 
   case 39:
-#line 147 "as.y"
+#line 148 "as.y"
     { emit(rri(OP_JALR, 0, 0, 1)); }
     break;
 
   case 40:
-#line 150 "as.y"
+#line 151 "as.y"
     { (yyval.ival) = 0; }
     break;
 
   case 41:
-#line 151 "as.y"
+#line 152 "as.y"
     { (yyval.ival) = 1; }
     break;
 
   case 42:
-#line 152 "as.y"
+#line 153 "as.y"
     { (yyval.ival) = 2; }
     break;
 
   case 43:
-#line 153 "as.y"
+#line 154 "as.y"
     { (yyval.ival) = 3; }
     break;
 
   case 44:
-#line 154 "as.y"
+#line 155 "as.y"
     { (yyval.ival) = 4; }
     break;
 
   case 45:
-#line 155 "as.y"
+#line 156 "as.y"
     { (yyval.ival) = 5; }
     break;
 
   case 46:
-#line 156 "as.y"
+#line 157 "as.y"
     { (yyval.ival) = 6; }
     break;
 
   case 47:
-#line 157 "as.y"
+#line 158 "as.y"
     { (yyval.ival) = 7; }
     break;
 
   case 48:
-#line 158 "as.y"
+#line 159 "as.y"
     { (yyval.ival) = 6; }
     break;
 
   case 49:
-#line 159 "as.y"
+#line 160 "as.y"
     { (yyval.ival) = 7; }
     break;
 
 
 /* Line 1267 of yacc.c.  */
-#line 1728 "y.tab.c"
+#line 1729 "y.tab.c"
       default: break;
     }
   YY_SYMBOL_PRINT ("-> $$ =", yyr1[yyn], &yyval, &yyloc);
@@ -1938,9 +1939,10 @@ yyreturn:
 }
 
 
-#line 162 "as.y"
+#line 163 "as.y"
 
 
+// define our keyword token table
 Tokens tokens[] =
 {
     {"ADD", ADD},
@@ -1983,6 +1985,15 @@ Tokens tokens[] =
 
     { NULL, 0}
 };
+
+//========================
+// error routine
+//========================
+void yyerror(char *s)
+{
+    fprintf(stderr, "error: %s near line %d\n", s, lineno);
+    err_count++;
+}
 
 // get options from the command line
 int getopt(int n, char *args[])
@@ -2029,6 +2040,8 @@ int getopt(int n, char *args[])
 // add a fixup
 void add_fixup(int symbol, int addr, int type)
 {
+    assert(fixup_count < MAX_FIXUPS);
+
     if (g_bDebug)
         printf("adding %s fixup for %s @ addr %d\n", fixup_names[type], symbols[symbol].name, addr);
 
@@ -2051,6 +2064,14 @@ void apply_fixups()
         if (g_bDebug)
             printf("fixing up %s reference to %s @ addr %d\n", fixup_names[f.type], symbols[fixups[i].symbol].name, fixups[i].addr);
 
+        // check that the symbols was defined
+        if (symbols[f.symbol].type == ST_UNDEF)
+        {
+            fprintf(stderr, "error: undefined symbol %s near line %d\n", symbols[f.symbol].name, symbols[f.symbol].lineno);
+            err_count++;
+            continue;
+        }
+
         switch(f.type)
         {
         case FIXUP_IMM10:
@@ -2070,6 +2091,7 @@ void apply_fixups()
             break;
 
         case FIXUP_REL7:
+            code[f.addr] |= (symbols[f.symbol].value - (f.addr + 1)) & MASK_7b;
             break;
 
         default:
@@ -2094,6 +2116,8 @@ int lookup_symbol(const char *name)
 // add a new symbols
 int add_symbol(const char *name, int lineno)
 {
+    assert(symbol_count < MAX_SYMBOLS);
+
     // error if symbol already exists
     if (lookup_symbol(name) > 0)
         return -1;
@@ -2105,14 +2129,6 @@ int add_symbol(const char *name, int lineno)
 
     symbol_count++;
     return symbol_count - 1;
-}
-
-//========================
-// error routine
-//========================
-void yyerror(char *s)
-{
-    fprintf(stderr, "error: %s near line %d\n", s, lineno);
 }
 
 //========================
@@ -2418,8 +2434,10 @@ int main(int argc, char *argv[])
 
     if (yyin != stdin)
         fclose(yyin);
-
-    printf("\nSuccessfully assembled %d instructions to %s\n\n", addr, g_szOutputFilename);
+    
+    printf("\nAssembled %d instructions to %s\n", addr, g_szOutputFilename);
+    if (err_count)
+        printf("%d errors found.\n\n", err_count);
 
     return 0;
 }
