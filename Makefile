@@ -1,17 +1,19 @@
 TARGET = as16
 DEPS	= as.y
 OBJS	= as.o
-CFLAGS	= -I. -g
+CFLAGS	= -I. -g -Wall
 LIBS	= -lm
+YACC	= yacc
+YFLAGS	= -d
 
 $(TARGET): $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
 
 y.tab.c: as.y
-	yacc -v -d as.y
+	$(YACC) $(YFLAGS) as.y
 
 as.o:	y.tab.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 clean:
-	rm $(TARGET) a.out *.o y.tab.c y.tab.h y.output
+	rm $(TARGET) $(OBJS) a.out y.tab.* y.output
