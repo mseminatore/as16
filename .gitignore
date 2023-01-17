@@ -43,3 +43,4 @@ bison.hairy
 *.db
 *.opendb
 Debug
+*.v

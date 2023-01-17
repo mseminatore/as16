@@ -1,3 +1,11 @@
+//================================================================================
+// as16 - an enhanced assember for the RiSC-16 Processor
+//
+// See LICENSE file for usage rights and obligations
+//
+// Copyright 2023 by Mark Seminatore
+//================================================================================
+
 %{
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,14 +19,14 @@
 // command line switches
 const char * g_szOutputFilename = "a.out";
 int g_bDebug = 0;
-int g_bSyncROM = 0;
+int g_bSyncROM = 1;
 int g_bROM = 0;
+int g_bSystemV = 0;
 int lineno = 1;
 
 FILE *yyin = NULL;
 FILE *fout = NULL;
 
-//uint16_t inst;
 uint16_t addr = 0;
 
 uint16_t code[MAX_CODE];
@@ -43,6 +51,13 @@ const char *fixup_names[] =
     "IMM10_HI",
     "REL7"
 };
+
+// Verilog vs. SystemVerilog strings
+char *input_wire = "input wire";
+char *output_reg = "output reg";
+char *always_ff = "always @(posedge clk)";
+char *always_comb = "always @*";
+char *reg = "reg";
 
 // symbol table
 Symbol_t symbols[MAX_SYMBOLS];
@@ -86,7 +101,7 @@ lines:
     | line lines
     ;
 
-line: label instruction     {}
+line: label instruction     { /* empty action needed here for now */ }
     ;
 
 label:
@@ -204,7 +219,18 @@ int getopt(int n, char *args[])
         if (args[i][1] == 's')
         {
             g_bROM = 1;
-            g_bSyncROM = 1;
+            g_bSystemV = 1;
+            input_wire = "logic";
+            output_reg = "logic";
+            reg = "logic";
+            always_comb = "always_comb";
+            always_ff = "always_ff";
+        }
+
+        if (args[i][1] == 'a')
+        {
+            g_bROM = 1;
+            g_bSyncROM = 0;
         }
 
 		if (args[i][1] == 'o')
@@ -491,38 +517,54 @@ void usage()
 	puts("-v\tverbose output");
 	puts("-o file\tset output filename");
     puts("-r\tgenerate Verilog rom file");
-    puts("-s\tgenerate synchronous Verilog\n");
+    puts("-a\tgenerate asynchronous Verilog rom");
+    puts("-s\tuse System Verilog\n");
 	exit(0);
 
 }
 
 // generate template prologue
-void prologue(FILE *f, int addr_bits, int data_bits) 
+void prologue(const char *filename, FILE *f, int addr_bits, int data_bits) 
 {
     fprintf(f, "`timescale 1ns / 1ps\n\n");
+    fprintf(f, "//////////////////////////////////////////////////////////////////\n");
+    fprintf(f, "// Verilog ROM file auto-generated from %s\n", filename);
+    fprintf(f, "//\n");
+    fprintf(f, "// Using as16, see https://github.com/mseminatore/as16\n");
+    fprintf(f, "//////////////////////////////////////////////////////////////////\n");
     fprintf(f, "module rom\n");
     fprintf(f, "(\n");
 
     if (g_bSyncROM)
-        fprintf(f, "\tinput wire clk,\n");
+        fprintf(f, "\t%s clk,\n", input_wire);
 
-    fprintf(f, "\tinput wire [%d : 0] addr,\n"
-        "\toutput reg [%d : 0] data\n"
-        ");\n\n", 
+    fprintf(f, "\t%s [%d : 0] addr,\n"
+        "\t%s [%d : 0] data\n"
+        ");\n\n",
+        input_wire,
         addr_bits - 1,
+        output_reg,
         data_bits - 1
     );
 
     if (g_bSyncROM)
-        fprintf(f, "\treg [%d : 0] addr_reg;\n\n"
+        fprintf(f, "\t// internal address register\n"
+            "\t%s [%d : 0] addr_reg;\n\n"
+            "\t//--------------------\n"
             "\t// Sequential logic\n"
-            "\talways @(posedge clk)\n"
+            "\t//--------------------\n"
+            "\t%s\n"
             "\t\taddr_reg <= addr;\n\n",
-            addr_bits - 1
+            reg,
+            addr_bits - 1,
+            always_ff
         );
 
-    fprintf(f, "\t// Combinational logic\n"
-        "\talways @*\n"
+    fprintf(f, "\t//--------------------\n"
+        "\t// Combinational logic\n"
+        "\t//--------------------\n"
+        "\t%s\n",
+        always_comb
     );
 
     if (g_bSyncROM)
@@ -539,17 +581,17 @@ void epilog(FILE *f)
 }
 
 // generate ROM data
-void romgen(FILE *fout, int addr_bits, int data_bits)
+void romgen(const char *filename, FILE *fout, int addr_bits, int data_bits)
 {
     int num;
 
-    prologue(fout, addr_bits, data_bits);
+    prologue(filename, fout, addr_bits, data_bits);
 
     // loop over the code and output Verilog
     for (int i = 0; i < addr; i++)
     {
         num = code[i];
-        fprintf(fout, "\t\t\t%d'd%d: data = %d'h%x;\t// $%X\n", addr_bits, i, data_bits, num, num);
+        fprintf(fout, "\t\t\t%d'd%d: data = %d'h%X;\t// decimal: %d\n", addr_bits, i, data_bits, num, num);
     }
     
     fprintf(fout, "\t\t\tdefault: data = %d'd0;\n", data_bits);
@@ -562,13 +604,19 @@ void romgen(FILE *fout, int addr_bits, int data_bits)
 //========================
 int main(int argc, char *argv[])
 {
+    char infile[BUF_SIZE] = "stdin";
+
+    // show usage if no arguments given
     if (argc == 1)
 		usage();
 
 	int iFirstArg = getopt(argc, argv);
 
     if (yyin != stdin)
+    {
         yyin = fopen(argv[iFirstArg], "rt");
+        strcpy(infile, argv[iFirstArg]);
+    }
 
     // set this to 0 to disable parser debugging
     yydebug = 0;
@@ -582,7 +630,7 @@ int main(int argc, char *argv[])
     apply_fixups();
 
     if (g_bROM)
-        romgen(fout, 10, 16);
+        romgen(infile, fout, 10, 16);
     else
         write_file();
 

@@ -144,7 +144,7 @@
 
 
 /* Copy the first part of user declarations.  */
-#line 1 "as.y"
+#line 9 "as.y"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -158,14 +158,14 @@
 // command line switches
 const char * g_szOutputFilename = "a.out";
 int g_bDebug = 0;
-int g_bSyncROM = 0;
+int g_bSyncROM = 1;
 int g_bROM = 0;
+int g_bSystemV = 0;
 int lineno = 1;
 
 FILE *yyin = NULL;
 FILE *fout = NULL;
 
-//uint16_t inst;
 uint16_t addr = 0;
 
 uint16_t code[MAX_CODE];
@@ -190,6 +190,13 @@ const char *fixup_names[] =
     "IMM10_HI",
     "REL7"
 };
+
+// Verilog vs. SystemVerilog strings
+char *input_wire = "input wire";
+char *output_reg = "output reg";
+char *always_ff = "always @(posedge clk)";
+char *always_comb = "always @*";
+char *reg = "reg";
 
 // symbol table
 Symbol_t symbols[MAX_SYMBOLS];
@@ -221,14 +228,14 @@ int fixup_count = 0;
 
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 typedef union YYSTYPE
-#line 58 "as.y"
+#line 73 "as.y"
 {
     int ival;
     int symbol;
     char *lexeme;
 }
 /* Line 193 of yacc.c.  */
-#line 232 "y.tab.c"
+#line 239 "y.tab.c"
 	YYSTYPE;
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1
@@ -241,7 +248,7 @@ typedef union YYSTYPE
 
 
 /* Line 216 of yacc.c.  */
-#line 245 "y.tab.c"
+#line 252 "y.tab.c"
 
 #ifdef short
 # undef short
@@ -545,11 +552,11 @@ static const yytype_int8 yyrhs[] =
 /* YYRLINE[YYN] -- source line where rule number YYN was defined.  */
 static const yytype_uint8 yyrline[] =
 {
-       0,    75,    75,    78,    79,    82,    85,    86,    89,    92,
-      93,    96,    97,   100,   101,   104,   105,   108,   109,   112,
-     113,   114,   115,   116,   117,   118,   119,   120,   121,   122,
-     123,   124,   125,   126,   127,   128,   129,   130,   131,   132,
-     135,   136,   137,   138,   139,   140,   141,   142,   143,   144
+       0,    90,    90,    93,    94,    97,   100,   101,   104,   107,
+     108,   111,   112,   115,   116,   119,   120,   123,   124,   127,
+     128,   129,   130,   131,   132,   133,   134,   135,   136,   137,
+     138,   139,   140,   141,   142,   143,   144,   145,   146,   147,
+     150,   151,   152,   153,   154,   155,   156,   157,   158,   159
 };
 #endif
 
@@ -1511,213 +1518,213 @@ yyreduce:
   switch (yyn)
     {
         case 5:
-#line 82 "as.y"
+#line 97 "as.y"
     { assert(symbols[(yyvsp[(1) - (3)].symbol)].type == ST_UNDEF); symbols[(yyvsp[(1) - (3)].symbol)].value = (yyvsp[(3) - (3)].ival); symbols[(yyvsp[(1) - (3)].symbol)].type = ST_EQU; }
     break;
 
   case 8:
-#line 89 "as.y"
-    {}
+#line 104 "as.y"
+    { /* empty action needed here for now */ }
     break;
 
   case 10:
-#line 93 "as.y"
+#line 108 "as.y"
     { assert(symbols[(yyvsp[(1) - (2)].symbol)].type == ST_UNDEF); symbols[(yyvsp[(1) - (2)].symbol)].value = addr; symbols[(yyvsp[(1) - (2)].symbol)].type = ST_LABEL; }
     break;
 
   case 11:
-#line 96 "as.y"
+#line 111 "as.y"
     { (yyval.ival) = (yyvsp[(1) - (1)].ival) & MASK_7b; }
     break;
 
   case 12:
-#line 97 "as.y"
+#line 112 "as.y"
     { if (symbols[(yyvsp[(1) - (1)].symbol)].type == ST_UNDEF) { add_fixup((yyvsp[(1) - (1)].symbol), addr, FIXUP_REL7); (yyval.ival) = 0; } else (yyval.ival) = (symbols[(yyvsp[(1) - (1)].symbol)].value & MASK_7b) - (addr + 1); /* return symbol value */ }
     break;
 
   case 13:
-#line 100 "as.y"
+#line 115 "as.y"
     { (yyval.ival) = (yyvsp[(1) - (1)].ival) & MASK_7b; }
     break;
 
   case 14:
-#line 101 "as.y"
+#line 116 "as.y"
     { if (symbols[(yyvsp[(1) - (1)].symbol)].type == ST_UNDEF) { add_fixup((yyvsp[(1) - (1)].symbol), addr, FIXUP_IMM7); (yyval.ival) = 0; } else (yyval.ival) = symbols[(yyvsp[(1) - (1)].symbol)].value & MASK_7b; /* return symbol value */ }
     break;
 
   case 15:
-#line 104 "as.y"
+#line 119 "as.y"
     { (yyval.ival) = (yyvsp[(1) - (1)].ival) & MASK_10b; }
     break;
 
   case 16:
-#line 105 "as.y"
+#line 120 "as.y"
     { if (symbols[(yyvsp[(1) - (1)].symbol)].type == ST_UNDEF) { add_fixup((yyvsp[(1) - (1)].symbol), addr, FIXUP_IMM10); (yyval.ival) = 0; } else (yyval.ival) = symbols[(yyvsp[(1) - (1)].symbol)].value & MASK_10b; /* return symbol value*/ }
     break;
 
   case 18:
-#line 109 "as.y"
+#line 124 "as.y"
     { if (symbols[(yyvsp[(1) - (1)].symbol)].type == ST_UNDEF) { add_fixup((yyvsp[(1) - (1)].symbol), addr, FIXUP_IMM10_HI); add_fixup((yyvsp[(1) - (1)].symbol), addr + 1, FIXUP_IMM6); (yyval.ival) = 0; } else (yyval.ival) = symbols[(yyvsp[(1) - (1)].symbol)].value; /* return symbol value */ }
     break;
 
   case 19:
-#line 112 "as.y"
+#line 127 "as.y"
     { emit(rrr(OP_ADD, (yyvsp[(2) - (6)].ival), (yyvsp[(4) - (6)].ival), (yyvsp[(6) - (6)].ival))); }
     break;
 
   case 20:
-#line 113 "as.y"
+#line 128 "as.y"
     { emit(rri(OP_ADDI, (yyvsp[(2) - (6)].ival), (yyvsp[(4) - (6)].ival), (yyvsp[(6) - (6)].ival))); }
     break;
 
   case 21:
-#line 114 "as.y"
+#line 129 "as.y"
     { emit(rrr(OP_NAND, (yyvsp[(2) - (6)].ival), (yyvsp[(4) - (6)].ival), (yyvsp[(6) - (6)].ival))); }
     break;
 
   case 22:
-#line 115 "as.y"
+#line 130 "as.y"
     { emit(ri(OP_LUI, (yyvsp[(2) - (4)].ival), (yyvsp[(4) - (4)].ival))); }
     break;
 
   case 23:
-#line 116 "as.y"
+#line 131 "as.y"
     { emit(rri(OP_SW, (yyvsp[(2) - (6)].ival), (yyvsp[(4) - (6)].ival), (yyvsp[(6) - (6)].ival))); }
     break;
 
   case 24:
-#line 117 "as.y"
+#line 132 "as.y"
     { emit(rri(OP_LW, (yyvsp[(2) - (6)].ival), (yyvsp[(4) - (6)].ival), (yyvsp[(6) - (6)].ival))); }
     break;
 
   case 25:
-#line 118 "as.y"
+#line 133 "as.y"
     { emit(rri(OP_BEQ, (yyvsp[(2) - (6)].ival), (yyvsp[(4) - (6)].ival), (yyvsp[(6) - (6)].ival))); }
     break;
 
   case 26:
-#line 119 "as.y"
+#line 134 "as.y"
     { emit(rri(OP_JALR, (yyvsp[(2) - (4)].ival), (yyvsp[(4) - (4)].ival), 0)); }
     break;
 
   case 27:
-#line 120 "as.y"
+#line 135 "as.y"
     { emit(rri(OP_JALR, 0, 6, 0)); }
     break;
 
   case 28:
-#line 121 "as.y"
+#line 136 "as.y"
     { emit(rri(OP_ADDI, 7, 7, -1)); emit(rri(OP_SW, (yyvsp[(2) - (2)].ival), 7, 0)); }
     break;
 
   case 29:
-#line 122 "as.y"
+#line 137 "as.y"
     { emit(rri(OP_LW, (yyvsp[(2) - (2)].ival), 7, 0)); emit(rri(OP_ADDI, 7, 7, 1)); }
     break;
 
   case 30:
-#line 123 "as.y"
+#line 138 "as.y"
     { emit(rri(OP_JALR, 0, (yyvsp[(2) - (2)].ival), 0)); }
     break;
 
   case 31:
-#line 124 "as.y"
+#line 139 "as.y"
     { emit(rri(OP_JALR, 6, (yyvsp[(2) - (2)].ival), 0)); }
     break;
 
   case 32:
-#line 125 "as.y"
+#line 140 "as.y"
     { emit(ri(OP_LUI, (yyvsp[(2) - (4)].ival), ((yyvsp[(4) - (4)].ival) & 0xffc0) >> 6)); emit(rri(OP_ADDI, (yyvsp[(2) - (4)].ival), (yyvsp[(2) - (4)].ival), (yyvsp[(4) - (4)].ival) & MASK_6b)); }
     break;
 
   case 33:
-#line 126 "as.y"
+#line 141 "as.y"
     { emit(rri(OP_ADDI, (yyvsp[(2) - (4)].ival), (yyvsp[(2) - (4)].ival), (yyvsp[(4) - (4)].ival) & 0x3f)); }
     break;
 
   case 34:
-#line 127 "as.y"
+#line 142 "as.y"
     { emit(rrr(OP_ADD, 0, 0, 0)); }
     break;
 
   case 35:
-#line 128 "as.y"
+#line 143 "as.y"
     { emit(rri(OP_ADDI, (yyvsp[(2) - (2)].ival), (yyvsp[(2) - (2)].ival), 1)); }
     break;
 
   case 36:
-#line 129 "as.y"
+#line 144 "as.y"
     { emit(rri(OP_ADDI, (yyvsp[(2) - (2)].ival), (yyvsp[(2) - (2)].ival), -1)); }
     break;
 
   case 37:
-#line 130 "as.y"
+#line 145 "as.y"
     { emit((yyvsp[(2) - (2)].ival)); }
     break;
 
   case 38:
-#line 131 "as.y"
+#line 146 "as.y"
     { for(int i = 0; i < (yyvsp[(2) - (2)].ival); i++) emit(0); }
     break;
 
   case 39:
-#line 132 "as.y"
+#line 147 "as.y"
     { emit(rri(OP_JALR, 0, 0, 1)); }
     break;
 
   case 40:
-#line 135 "as.y"
+#line 150 "as.y"
     { (yyval.ival) = 0; }
     break;
 
   case 41:
-#line 136 "as.y"
+#line 151 "as.y"
     { (yyval.ival) = 1; }
     break;
 
   case 42:
-#line 137 "as.y"
+#line 152 "as.y"
     { (yyval.ival) = 2; }
     break;
 
   case 43:
-#line 138 "as.y"
+#line 153 "as.y"
     { (yyval.ival) = 3; }
     break;
 
   case 44:
-#line 139 "as.y"
+#line 154 "as.y"
     { (yyval.ival) = 4; }
     break;
 
   case 45:
-#line 140 "as.y"
+#line 155 "as.y"
     { (yyval.ival) = 5; }
     break;
 
   case 46:
-#line 141 "as.y"
+#line 156 "as.y"
     { (yyval.ival) = 6; }
     break;
 
   case 47:
-#line 142 "as.y"
+#line 157 "as.y"
     { (yyval.ival) = 7; }
     break;
 
   case 48:
-#line 143 "as.y"
+#line 158 "as.y"
     { (yyval.ival) = 6; }
     break;
 
   case 49:
-#line 144 "as.y"
+#line 159 "as.y"
     { (yyval.ival) = 7; }
     break;
 
 
 /* Line 1267 of yacc.c.  */
-#line 1721 "y.tab.c"
+#line 1728 "y.tab.c"
       default: break;
     }
   YY_SYMBOL_PRINT ("-> $$ =", yyr1[yyn], &yyval, &yyloc);
@@ -1931,7 +1938,7 @@ yyreturn:
 }
 
 
-#line 147 "as.y"
+#line 162 "as.y"
 
 
 Tokens tokens[] =
@@ -1992,7 +1999,18 @@ int getopt(int n, char *args[])
         if (args[i][1] == 's')
         {
             g_bROM = 1;
-            g_bSyncROM = 1;
+            g_bSystemV = 1;
+            input_wire = "logic";
+            output_reg = "logic";
+            reg = "logic";
+            always_comb = "always_comb";
+            always_ff = "always_ff";
+        }
+
+        if (args[i][1] == 'a')
+        {
+            g_bROM = 1;
+            g_bSyncROM = 0;
         }
 
 		if (args[i][1] == 'o')
@@ -2279,38 +2297,54 @@ void usage()
 	puts("-v\tverbose output");
 	puts("-o file\tset output filename");
     puts("-r\tgenerate Verilog rom file");
-    puts("-s\tgenerate synchronous Verilog\n");
+    puts("-a\tgenerate asynchronous Verilog rom");
+    puts("-s\tuse System Verilog\n");
 	exit(0);
 
 }
 
 // generate template prologue
-void prologue(FILE *f, int addr_bits, int data_bits) 
+void prologue(const char *filename, FILE *f, int addr_bits, int data_bits) 
 {
     fprintf(f, "`timescale 1ns / 1ps\n\n");
+    fprintf(f, "//////////////////////////////////////////////////////////////////\n");
+    fprintf(f, "// Verilog ROM file auto-generated from %s\n", filename);
+    fprintf(f, "//\n");
+    fprintf(f, "// Using as16, see https://github.com/mseminatore/as16\n");
+    fprintf(f, "//////////////////////////////////////////////////////////////////\n");
     fprintf(f, "module rom\n");
     fprintf(f, "(\n");
 
     if (g_bSyncROM)
-        fprintf(f, "\tinput wire clk,\n");
+        fprintf(f, "\t%s clk,\n", input_wire);
 
-    fprintf(f, "\tinput wire [%d : 0] addr,\n"
-        "\toutput reg [%d : 0] data\n"
-        ");\n\n", 
+    fprintf(f, "\t%s [%d : 0] addr,\n"
+        "\t%s [%d : 0] data\n"
+        ");\n\n",
+        input_wire,
         addr_bits - 1,
+        output_reg,
         data_bits - 1
     );
 
     if (g_bSyncROM)
-        fprintf(f, "\treg [%d : 0] addr_reg;\n\n"
+        fprintf(f, "\t// internal address register\n"
+            "\t%s [%d : 0] addr_reg;\n\n"
+            "\t//--------------------\n"
             "\t// Sequential logic\n"
-            "\talways @(posedge clk)\n"
+            "\t//--------------------\n"
+            "\t%s\n"
             "\t\taddr_reg <= addr;\n\n",
-            addr_bits - 1
+            reg,
+            addr_bits - 1,
+            always_ff
         );
 
-    fprintf(f, "\t// Combinational logic\n"
-        "\talways @*\n"
+    fprintf(f, "\t//--------------------\n"
+        "\t// Combinational logic\n"
+        "\t//--------------------\n"
+        "\t%s\n",
+        always_comb
     );
 
     if (g_bSyncROM)
@@ -2327,17 +2361,17 @@ void epilog(FILE *f)
 }
 
 // generate ROM data
-void romgen(FILE *fout, int addr_bits, int data_bits)
+void romgen(const char *filename, FILE *fout, int addr_bits, int data_bits)
 {
     int num;
 
-    prologue(fout, addr_bits, data_bits);
+    prologue(filename, fout, addr_bits, data_bits);
 
     // loop over the code and output Verilog
     for (int i = 0; i < addr; i++)
     {
         num = code[i];
-        fprintf(fout, "\t\t\t%d'd%d: data = %d'h%x;\t// $%X\n", addr_bits, i, data_bits, num, num);
+        fprintf(fout, "\t\t\t%d'd%d: data = %d'h%X;\t// decimal: %d\n", addr_bits, i, data_bits, num, num);
     }
     
     fprintf(fout, "\t\t\tdefault: data = %d'd0;\n", data_bits);
@@ -2350,13 +2384,19 @@ void romgen(FILE *fout, int addr_bits, int data_bits)
 //========================
 int main(int argc, char *argv[])
 {
+    char infile[BUF_SIZE] = "stdin";
+
+    // show usage if no arguments given
     if (argc == 1)
 		usage();
 
 	int iFirstArg = getopt(argc, argv);
 
     if (yyin != stdin)
+    {
         yyin = fopen(argv[iFirstArg], "rt");
+        strcpy(infile, argv[iFirstArg]);
+    }
 
     // set this to 0 to disable parser debugging
     yydebug = 0;
@@ -2370,7 +2410,7 @@ int main(int argc, char *argv[])
     apply_fixups();
 
     if (g_bROM)
-        romgen(fout, 10, 16);
+        romgen(infile, fout, 10, 16);
     else
         write_file();
 
