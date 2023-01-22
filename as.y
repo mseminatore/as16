@@ -14,7 +14,6 @@
 #include <stdint.h>
 #include <assert.h>
 #include "as.h"
-//#include "y.tab.h"
 
 // command line switches
 const char * g_szOutputFilename = "a.out";
@@ -22,27 +21,42 @@ int g_bDebug = 0;
 int g_bSyncROM = 1;
 int g_bROM = 0;
 int g_bSystemV = 0;
+
+// parser tracking
 int lineno = 1;
 int err_count = 0;
 
+// assembler input and output files
 FILE *yyin = NULL;
 FILE *fout = NULL;
 
+// code segment
 uint16_t addr = 0;
-
 uint16_t code[MAX_CODE];
 
-// accumulate generated code
-void emit(uint16_t v)
-{
-    code[addr] = v;
-    addr++;
+// symbol table
+Symbol_t symbols[MAX_SYMBOLS];
+int symbol_count = 0;
+
+// fixups
+Fixup_t fixups[MAX_FIXUPS];
+int fixup_count = 0;
+
+// helper functions for instruction format encoding
+uint16_t rrr(int op, int ra, int rb, int rc) 
+{ 
+    return (op << OP_SHIFT) | (ra << RA_SHIFT) | (rb << RB_SHIFT) | rc; 
 }
 
-// helper functions
-uint16_t rrr(int op, int ra, int rb, int rc) { return (op << OP_SHIFT) | (ra << RA_SHIFT) | (rb << RB_SHIFT) | rc; }
-uint16_t rri(int op, int ra, int rb, int imm7) { return (op << OP_SHIFT) | (ra << RA_SHIFT) | (rb << RB_SHIFT) | (imm7 & 0x7f); }
-uint16_t ri(int op, int ra, int imm10) { return (op << OP_SHIFT) | (ra << RA_SHIFT) | (imm10 & 0x3ff); }
+uint16_t rri(int op, int ra, int rb, int imm7) 
+{ 
+    return (op << OP_SHIFT) | (ra << RA_SHIFT) | (rb << RB_SHIFT) | (imm7 & 0x7f); 
+}
+
+uint16_t ri(int op, int ra, int imm10) 
+{ 
+    return (op << OP_SHIFT) | (ra << RA_SHIFT) | (imm10 & 0x3ff); 
+}
 
 const char *fixup_names[] =
 {
@@ -54,19 +68,18 @@ const char *fixup_names[] =
 };
 
 // Verilog vs. SystemVerilog strings
-char *input_wire = "input wire";
-char *output_reg = "output reg";
-char *always_ff = "always @(posedge clk)";
-char *always_comb = "always @*";
-char *reg = "reg";
+char *input_wire    = "input wire";
+char *output_reg    = "output reg";
+char *always_ff     = "always @(posedge clk)";
+char *always_comb   = "always @*";
+char *reg           = "reg";
 
-// symbol table
-Symbol_t symbols[MAX_SYMBOLS];
-int symbol_count = 0;
-
-// fixups
-Fixup_t fixups[MAX_FIXUPS];
-int fixup_count = 0;
+// helper function to accumulate generated code
+void emit(uint16_t v)
+{
+    code[addr] = v;
+    addr++;
+}
 
 %}
 
@@ -95,7 +108,7 @@ equates:
     | equates equate
     ;
 
-equate: ID EQU NUMBER         { if(symbols[$1].type != ST_UNDEF) yyerror("duplicate symbol"); symbols[$1].value = $3; symbols[$1].type = ST_EQU; }
+equate: ID EQU NUMBER         { if (symbols[$1].type != ST_UNDEF) yyerror("duplicate symbol"); symbols[$1].value = $3; symbols[$1].type = ST_EQU; }
     ;
 
 lines:
