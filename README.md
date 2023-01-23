@@ -86,9 +86,9 @@ EQU | label EQU value | Associate the label name with the numeric constant value
 
 In writing RiSC-16 code I found that I wanted to establish calling conventions 
 (ABI) for myself. The convention I chose was that I would use R7 as a stack 
-pointer and that R6 would be used as a link register. To make this usage 
-clearer in assembly code I created the register aliases `SP` (R7) and `LR` (R6)
-which can be used anywhere a register is accepted.
+pointer, R6 would be used as a link register, and R5 would be a frame pointer.
+To make this usage clearer in assembly code I created the register aliases
+`SP` (R7), `LR` (R6) and `FP` (R5) which can be used anywhere a register is accepted.
 
 ## Additional Pseudo-instructions
 
