@@ -104,7 +104,7 @@ j | j rA | Unconditional jump to address in regA. Equivalent to jalr r0, rA
 push | push rA | Push regA onto stack. Equivalent to addi sp, sp, -1 and sw rA, sp, 0
 pop | pop rA | Pop regA from stack. Equivalent to lw rA, sp, 0 and addi sp, sp, 1
 mov | mov rA, rB | Move contents of regB to regA. Equivalent to addi rA, rB, 0
-lwi | lwi rA, imm | Alias for movi which is a load. Equalent for movi rA, imm
+lwi | lwi rA, imm | Alias for movi because it realli is a load. Equalent to movi rA, imm
 
 ## Future work
 
