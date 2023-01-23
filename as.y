@@ -93,9 +93,10 @@ void emit(uint16_t v)
 %token EQU
 %token <symbol> ID NEWID
 %token <ival> ADD ADDI NAND LUI SW LW BEQ JALR
-%token <ival> INC DEC
+%token <ival> INC DEC MOV LWI
 %token <ival> RET PUSH POP CALL J MOVI LLI NOP
-%token <ival> NUMBER R0 R1 R2 R3 R4 R5 R6 R7 LR SP FP
+%token <ival> NUMBER R0 R1 R2 R3 R4 R5 R6 R7
+%token <ival> LR SP FP
 %type <ival> register imm7 imm10 line imm rel7
 %token FILL SPACE HALT
 
@@ -152,6 +153,7 @@ instruction: ADD register ',' register ',' register     { emit(rrr(OP_ADD, $2, $
     | J register                                        { emit(rri(OP_JALR, 0, $2, 0)); }
     | CALL register                                     { emit(rri(OP_JALR, 6, $2, 0)); }
     | MOVI register ',' imm                             { emit(ri(OP_LUI, $2, ($4 & 0xffc0) >> 6)); emit(rri(OP_ADDI, $2, $2, $4 & MASK_6b)); }
+    | LWI register ',' imm                              { emit(ri(OP_LUI, $2, ($4 & 0xffc0) >> 6)); emit(rri(OP_ADDI, $2, $2, $4 & MASK_6b)); }
     | LLI register ',' imm7                             { emit(rri(OP_ADDI, $2, $2, $4 & 0x3f)); }
     | NOP                                               { emit(rrr(OP_ADD, 0, 0, 0)); }
     | INC register                                      { emit(rri(OP_ADDI, $2, $2, 1)); }
@@ -159,6 +161,7 @@ instruction: ADD register ',' register ',' register     { emit(rrr(OP_ADD, $2, $
     | FILL NUMBER                                       { emit($2); }
     | SPACE NUMBER                                      { for(int i = 0; i < $2; i++) emit(0); }
     | HALT                                              { emit(rri(OP_JALR, 0, 0, 1)); }
+    | MOV register ',' register                         { emit(rri(OP_ADDI, $2, $4, 0)); }
     ;
 
 register: R0    { $$ = 0; }
@@ -213,6 +216,8 @@ Tokens tokens[] =
     { "EQU", EQU},
     { "INC", INC},
     { "DEC", DEC},
+    { "MOV", MOV},
+    { "LWI", LWI},
 
     { ".FILL", FILL},
     { ".SPACE", SPACE},

@@ -52,29 +52,31 @@
      JALR = 268,
      INC = 269,
      DEC = 270,
-     RET = 271,
-     PUSH = 272,
-     POP = 273,
-     CALL = 274,
-     J = 275,
-     MOVI = 276,
-     LLI = 277,
-     NOP = 278,
-     NUMBER = 279,
-     R0 = 280,
-     R1 = 281,
-     R2 = 282,
-     R3 = 283,
-     R4 = 284,
-     R5 = 285,
-     R6 = 286,
-     R7 = 287,
-     LR = 288,
-     SP = 289,
-     FP = 290,
-     FILL = 291,
-     SPACE = 292,
-     HALT = 293
+     MOV = 271,
+     LWI = 272,
+     RET = 273,
+     PUSH = 274,
+     POP = 275,
+     CALL = 276,
+     J = 277,
+     MOVI = 278,
+     LLI = 279,
+     NOP = 280,
+     NUMBER = 281,
+     R0 = 282,
+     R1 = 283,
+     R2 = 284,
+     R3 = 285,
+     R4 = 286,
+     R5 = 287,
+     R6 = 288,
+     R7 = 289,
+     LR = 290,
+     SP = 291,
+     FP = 292,
+     FILL = 293,
+     SPACE = 294,
+     HALT = 295
    };
 #endif
 /* Tokens.  */
@@ -91,29 +93,31 @@
 #define JALR 268
 #define INC 269
 #define DEC 270
-#define RET 271
-#define PUSH 272
-#define POP 273
-#define CALL 274
-#define J 275
-#define MOVI 276
-#define LLI 277
-#define NOP 278
-#define NUMBER 279
-#define R0 280
-#define R1 281
-#define R2 282
-#define R3 283
-#define R4 284
-#define R5 285
-#define R6 286
-#define R7 287
-#define LR 288
-#define SP 289
-#define FP 290
-#define FILL 291
-#define SPACE 292
-#define HALT 293
+#define MOV 271
+#define LWI 272
+#define RET 273
+#define PUSH 274
+#define POP 275
+#define CALL 276
+#define J 277
+#define MOVI 278
+#define LLI 279
+#define NOP 280
+#define NUMBER 281
+#define R0 282
+#define R1 283
+#define R2 284
+#define R3 285
+#define R4 286
+#define R5 287
+#define R6 288
+#define R7 289
+#define LR 290
+#define SP 291
+#define FP 292
+#define FILL 293
+#define SPACE 294
+#define HALT 295
 
 
 
@@ -127,7 +131,7 @@ typedef union YYSTYPE
     char *lexeme;
 }
 /* Line 1529 of yacc.c.  */
-#line 131 "y.tab.h"
+#line 135 "y.tab.h"
 	YYSTYPE;
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1
