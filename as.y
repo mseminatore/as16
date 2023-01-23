@@ -17,10 +17,10 @@
 
 // command line switches
 const char * g_szOutputFilename = "a.out";
-int g_bDebug = 0;
-int g_bSyncROM = 1;
-int g_bROM = 0;
-int g_bSystemV = 0;
+int g_bDebug    = FALSE;
+int g_bSyncROM  = TRUE;
+int g_bROM      = FALSE;
+int g_bSystemV  = FALSE;
 
 // parser tracking
 int lineno = 1;
@@ -95,7 +95,7 @@ void emit(uint16_t v)
 %token <ival> ADD ADDI NAND LUI SW LW BEQ JALR
 %token <ival> INC DEC
 %token <ival> RET PUSH POP CALL J MOVI LLI NOP
-%token <ival> NUMBER R0 R1 R2 R3 R4 R5 R6 R7 LR SP
+%token <ival> NUMBER R0 R1 R2 R3 R4 R5 R6 R7 LR SP FP
 %type <ival> register imm7 imm10 line imm rel7
 %token FILL SPACE HALT
 
@@ -169,6 +169,7 @@ register: R0    { $$ = 0; }
     | R5        { $$ = 5; }
     | R6        { $$ = 6; }
     | R7        { $$ = 7; }
+    | FP        { $$ = 5; }
     | LR        { $$ = 6; }
     | SP        { $$ = 7; }
     ;
@@ -198,6 +199,7 @@ Tokens tokens[] =
     // useful register aliases
     {"LR", LR},
     {"SP", SP},
+    {"FP", FP},
 
     // pseudo instructions
     {"RET", RET},
@@ -232,37 +234,44 @@ void yyerror(char *s)
 int getopt(int n, char *args[])
 {
 	int i;
+    
 	for (i = 1; args[i] && args[i][0] == '-'; i++)
 	{
+        // flag for enabling verbose logging
 		if (args[i][1] == 'v')
-			g_bDebug = 1;
+			g_bDebug = TRUE;
 
+        // flag for generating Verilog rom
         if (args[i][1] == 'r')
-            g_bROM = 1;
+            g_bROM = TRUE;
 
+        // flag for generating SystemVerilog rom
         if (args[i][1] == 's')
         {
-            g_bROM = 1;
-            g_bSystemV = 1;
-            input_wire = "logic";
-            output_reg = "logic";
-            reg = "logic";
+            g_bROM      = TRUE;
+            g_bSystemV  = TRUE;
+            input_wire  = "logic";
+            output_reg  = "logic";
+            reg         = "logic";
             always_comb = "always_comb";
-            always_ff = "always_ff";
+            always_ff   = "always_ff";
         }
 
+        // flag for generating an async rom
         if (args[i][1] == 'a')
         {
-            g_bROM = 1;
-            g_bSyncROM = 0;
+            g_bROM      = TRUE;
+            g_bSyncROM  = FALSE;
         }
 
+        // flag for setting output file name
 		if (args[i][1] == 'o')
 		{
 			g_szOutputFilename = args[i + 1];
 			i++;
 		}
 
+        // flag for taking input from stdio
         if (args[i][1] == 'i')
             yyin = stdin;
 	}
@@ -294,6 +303,7 @@ void apply_fixups()
     for (int i = 0; i < fixup_count; i++)
     {
         Fixup_t f = fixups[i];
+
         if (g_bDebug)
             printf("fixing up %s reference to %s @ addr %d\n", fixup_names[f.type], symbols[fixups[i].symbol].name, fixups[i].addr);
 
@@ -305,6 +315,7 @@ void apply_fixups()
             continue;
         }
 
+        // handle the specific fixup type
         switch(f.type)
         {
         case FIXUP_IMM10:
@@ -328,12 +339,15 @@ void apply_fixups()
             break;
 
         default:
-            assert(0);
+            fprintf(stderr, "Error: unknown fixup type!\n");
+            assert(FALSE);
         }
     }
 }
 
+//========================
 // lookup a symbol
+//========================
 int lookup_symbol(const char *name)
 {
     for (int i = 0; i < symbol_count; i++)
@@ -346,7 +360,9 @@ int lookup_symbol(const char *name)
     return -1;
 }
 
+//========================
 // add a new symbols
+//========================
 int add_symbol(const char *name, int lineno)
 {
     assert(symbol_count < MAX_SYMBOLS);
@@ -448,7 +464,7 @@ int isToken(const char *s)
             return pTokens->token;
     }
 
-    return 0;
+    return FALSE;
 }
 
 //========================
@@ -464,7 +480,7 @@ yylex01:
 
     // see if input is empty
     if (c == EOF)
-        return 0;
+        return DONE;
 
     // look for asm style comments
     if (c == '#' || c == ';')
@@ -602,14 +618,18 @@ void prologue(const char *filename, FILE *f, int addr_bits, int data_bits)
         fprintf(f, "\t\tcase (addr)\n");
 }
 
+//==========================
 // generate template epilog
+//==========================
 void epilog(FILE *f) 
 {
     fputs("\t\tendcase\n", f);
     fputs("endmodule\n", f);
 }
 
+//========================
 // generate ROM data
+//========================
 void romgen(const char *filename, FILE *fout, int addr_bits, int data_bits)
 {
     int num;
@@ -658,8 +678,9 @@ int main(int argc, char *argv[])
     // fixup any forward references
     apply_fixups();
 
+    // output hex code or rom file
     if (g_bROM)
-        romgen(infile, fout, 10, 16);
+        romgen(infile, fout, ADDRESS_BITS, INSTRUCTION_BITS);
     else
         write_file();
 
