@@ -228,16 +228,18 @@ Tokens tokens[] =
     { NULL, 0}
 };
 
-//========================
+//------------------------
 // error routine
-//========================
+//------------------------
 void yyerror(char *s)
 {
     fprintf(stderr, "error: %s near line %d\n", s, lineno);
     err_count++;
 }
 
+//-----------------------------------
 // get options from the command line
+//-----------------------------------
 int getopt(int n, char *args[])
 {
 	int i;
@@ -286,7 +288,9 @@ int getopt(int n, char *args[])
 	return i;
 }
 
+//------------------------
 // add a fixup
+//------------------------
 void add_fixup(int symbol, int addr, int type)
 {
     assert(fixup_count < MAX_FIXUPS);
@@ -301,7 +305,9 @@ void add_fixup(int symbol, int addr, int type)
     fixup_count++;
 }
 
+//------------------------
 // apply fixups
+//------------------------
 void apply_fixups()
 {
      if (g_bDebug)
@@ -352,9 +358,9 @@ void apply_fixups()
     }
 }
 
-//========================
+//------------------------
 // lookup a symbol
-//========================
+//------------------------
 int lookup_symbol(const char *name)
 {
     for (int i = 0; i < symbol_count; i++)
@@ -367,9 +373,9 @@ int lookup_symbol(const char *name)
     return -1;
 }
 
-//========================
+//------------------------
 // add a new symbols
-//========================
+//------------------------
 int add_symbol(const char *name, int lineno)
 {
     assert(symbol_count < MAX_SYMBOLS);
@@ -387,9 +393,9 @@ int add_symbol(const char *name, int lineno)
     return symbol_count - 1;
 }
 
-//========================
+//------------------------
 // discard input to EOL
-//========================
+//------------------------
 void skipToEOL(void)
 {
 	int c;
@@ -403,9 +409,9 @@ void skipToEOL(void)
 	ungetc(c, yyin);
 }
 
-//==================================
+//----------------------------------
 // Conditionally return token value
-//==================================
+//----------------------------------
 int follow(int expect, int ifyes, int ifno)
 {
 	int chr;
@@ -418,9 +424,9 @@ int follow(int expect, int ifyes, int ifno)
 	return ifno;
 }
 
-//========================
+//------------------------
 // match a number token
-//========================
+//------------------------
 int getNumber()
 {
 	int c;
@@ -458,9 +464,9 @@ int getNumber()
     return NUMBER;
 }
 
-//========================
+//------------------------
 // see if we match a token
-//========================
+//------------------------
 int isToken(const char *s)
 {
     Tokens *pTokens = tokens;
@@ -474,9 +480,9 @@ int isToken(const char *s)
     return FALSE;
 }
 
-//========================
+//------------------------
 // lexical analyzer
-//========================
+//------------------------
 int yylex()
 {
     int c;
@@ -554,14 +560,18 @@ yylex01:
     return c;
 }
 
+//------------------------
 //
+//------------------------
 void write_file()
 {
     for (int i = 0; i < addr; i++)
         fprintf(fout, "%04X\n", code[i]);
 }
 
-//
+//------------------------
+// usage banner
+//------------------------
 void usage()
 {
 	puts("\nusage: as16 [options] filename\n");
@@ -575,7 +585,9 @@ void usage()
 
 }
 
+//----------------------------
 // generate template prologue
+//----------------------------
 void prologue(const char *filename, FILE *f, int addr_bits, int data_bits) 
 {
     fprintf(f, "`timescale 1ns / 1ps\n\n");
@@ -625,18 +637,18 @@ void prologue(const char *filename, FILE *f, int addr_bits, int data_bits)
         fprintf(f, "\t\tcase (addr)\n");
 }
 
-//==========================
+//------------------------
 // generate template epilog
-//==========================
+//------------------------
 void epilog(FILE *f) 
 {
     fputs("\t\tendcase\n", f);
     fputs("endmodule\n", f);
 }
 
-//========================
+//------------------------
 // generate ROM data
-//========================
+//------------------------
 void romgen(const char *filename, FILE *fout, int addr_bits, int data_bits)
 {
     int num;
@@ -655,9 +667,9 @@ void romgen(const char *filename, FILE *fout, int addr_bits, int data_bits)
     epilog(fout);
 }
 
-//========================
+//------------------------
 // main entry point
-//========================
+//------------------------
 int main(int argc, char *argv[])
 {
     char infile[BUF_SIZE] = "stdin";
