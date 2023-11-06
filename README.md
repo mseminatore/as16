@@ -1,6 +1,6 @@
 # as16 - an enhanced assembler for the RiSC-16 Processor
 
-[![CMake](https://github.com/mseminatore/as16/actions/workflows/cmake-single-platform.yml/badge.svg)](https://github.com/mseminatore/as16/actions/workflows/cmake-single-platform.yml)
+[![CMake](https://github.com/mseminatore/as16/actions/workflows/cmake.yml/badge.svg)](https://github.com/mseminatore/as16/actions/workflows/cmake.yml)
 
 This is a simple assembler for the RiSC-16 processor design developed by
 Professor [Bruce Jacob](https://user.eng.umd.edu/~blj/RiSC/). This assembler is
