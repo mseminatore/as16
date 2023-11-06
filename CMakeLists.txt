@@ -4,8 +4,8 @@ cmake_minimum_required(VERSION 3.10)
 project(as16 VERSION 1.0 LANGUAGES C)
 
 # testing
-#enable_testing()
-#add_test(NAME as16_test COMMAND as16_test)
+enable_testing()
+add_test(NAME as16_test COMMAND as16 "${CMAKE_SOURCE_DIR}/test.asm")
 
 # add the includes
 include_directories(${PROJECT_SOURCE_DIR})
