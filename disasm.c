@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <ctype.h>
 #include <string.h>
 #include <assert.h>
@@ -11,19 +12,25 @@ int g_bRegisterAliases = 0;
 
 #define MAX_BUFFER 1024
 
+//------------------------
 //
+//------------------------
 static const char *regs[] = {"r0", "r1", "r2", "r3", "r4", "r5", "lr", "sp"};
 static const char *oregs[] = {"r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7"};
 static const char *ops[] = { "add", "addi", "nand", "lui", "sw", "lw", "beq", "jalr" };
 
-//
+//------------------------
+// basic instruction format
+//------------------------
 typedef struct
 {
 	unsigned unused : 13;
 	unsigned opcode : 3;
 } Inst_type;
 
-//
+//------------------------
+// 3-reg inst format
+//------------------------
 typedef struct
 {
 	unsigned regc : 3;
@@ -33,7 +40,9 @@ typedef struct
 	unsigned opcode : 3;
 } RRR_type;
 
-//
+//------------------------
+// reg-reg-imm inst format
+//------------------------
 typedef struct
 {
 	int imm7 : 7;
@@ -42,7 +51,9 @@ typedef struct
 	unsigned opcode : 3;
 } RRI_type;
 
-//
+//------------------------
+// reg-imm inst format
+//------------------------
 typedef struct
 {
 	int imm10 : 10;
@@ -50,7 +61,9 @@ typedef struct
 	unsigned opcode : 3;
 } RI_type;
 
+//------------------------
 //
+//------------------------
 const char *reg(uint16_t v)
 {
 	if (g_bRegisterAliases)
@@ -59,7 +72,9 @@ const char *reg(uint16_t v)
 	return oregs[v];
 }
 
+//-----------------------------------
 // get options from the command line
+//-----------------------------------
 int getopt(int n, char *args[])
 {
 	int i;
@@ -86,7 +101,9 @@ int getopt(int n, char *args[])
 	return i;
 }
 
-//
+//------------------------
+// display usage banner
+//------------------------
 void usage()
 {
 	puts("\nusage: disasm [options] filename\n");
@@ -96,7 +113,9 @@ void usage()
 	exit(0);
 }
 
-//
+//------------------------
+// disassemble an inst
+//------------------------
 void diasm(int addr, unsigned short val)
 {
 	unsigned opcode = val >> 13;
@@ -134,7 +153,9 @@ void diasm(int addr, unsigned short val)
 	}
 }
 
-//
+//------------------------
+// disassemble a file
+//------------------------
 void decode(FILE *f)
 {
 	char buf[MAX_BUFFER];
@@ -171,7 +192,9 @@ void decode(FILE *f)
 	}
 }
 
-//
+//------------------------
+// main entry point
+//------------------------
 int main(int argc, char *argv[])
 {
 	if (argc < 2)
@@ -180,6 +203,11 @@ int main(int argc, char *argv[])
 	int iFirstArg = getopt(argc, argv);
 
 	FILE *f = fopen(argv[iFirstArg], "rt");
+	if (!f)
+	{
+		printf("File not found: %s\n", argv[iFirstArg]);
+		return 1;
+	}
 
 	printf(
 		"\nRiSC-16 processor disassembler\n\n"
