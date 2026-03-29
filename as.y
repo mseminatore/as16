@@ -101,6 +101,7 @@ void emit(uint16_t v)
 %token <ival> LR SP FP
 %type <ival> register imm7 imm10 line imm rel7
 %token FILL SPACE HALT
+%token SMSR GMSR SYSCALL RTI
 
 %%
 
@@ -162,7 +163,11 @@ instruction: ADD register ',' register ',' register     { emit(rrr(OP_ADD, $2, $
     | DEC register                                      { emit(rri(OP_ADDI, $2, $2, -1)); }
     | FILL NUMBER                                       { emit($2); }
     | SPACE NUMBER                                      { for(int i = 0; i < $2; i++) emit(0); }
-    | HALT                                              { emit(rri(OP_JALR, 0, 0, 1)); }
+    | HALT                                              { emit(rri(OP_JALR, 0, 0,  XFUNC_HALT    << 3));       }
+    | SMSR register                                     { emit(rri(OP_JALR, 0, 0, (XFUNC_SMSR    << 3) | $2)); }
+    | GMSR register                                     { emit(rri(OP_JALR, 0, 0, (XFUNC_GMSR    << 3) | $2)); }
+    | SYSCALL                                           { emit(rri(OP_JALR, 0, 0,  XFUNC_SYSCALL << 3));       }
+    | RTI                                               { emit(rri(OP_JALR, 0, 0, (XFUNC_RTI     << 3) | 6));  }
     | MOV register ',' register                         { emit(rri(OP_ADDI, $2, $4, 0)); }
     ;
 
@@ -224,6 +229,10 @@ Tokens tokens[] =
     { ".FILL", FILL},
     { ".SPACE", SPACE},
     { "HALT", HALT},
+    {"SMSR",    SMSR},
+    {"GMSR",    GMSR},
+    {"SYSCALL", SYSCALL},
+    {"RTI",     RTI},
 
     { NULL, 0}
 };

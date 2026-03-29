@@ -108,6 +108,20 @@ pop | pop rA | Pop regA from stack. Equivalent to lw rA, sp, 0 and addi sp, sp, 
 mov | mov rA, rB | Move contents of regB to regA. Equivalent to addi rA, rB, 0
 lwi | lwi rA, imm | Alias for movi because it really is a load. Equalent to movi rA, imm
 
+## JALR Sub-instructions
+
+When Ra=R0, Rb=R0, and the `imm7[6:3]` field is non-zero, the RiSC-16 CPU dispatches
+to an extended operation rather than a normal jump. `as16` supports the following five
+sub-instructions using this encoding:
+
+Mnemonic | Assembly Format | Encoding | Action
+---------|-----------------|----------|-------
+smsr | smsr rA | 0xE008–0xE00F | Set MSR from regA. MSR ← regA[7:0]
+gmsr | gmsr rA | 0xE010–0xE017 | Get MSR into regA. regA ← {8'b0, MSR}
+halt | halt | 0xE018 | Halt the processor (infinite loop)
+syscall | syscall | 0xE020 | System call. Saves PC+1 to LR, jumps to ROM[2], clears interrupt enable
+rti | rti | 0xE02E | Return from interrupt. Restores interrupt enable, jumps to LR (R6)
+
 ## Future work
 
 There are a few additional changes that I would still like to make to `as16`. These are,

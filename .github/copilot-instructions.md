@@ -51,7 +51,9 @@ Three helper functions in `as.y` encode instructions into 16-bit words:
 All use the bit positions defined in `as.h`: `OP_SHIFT=13`, `RA_SHIFT=10`, `RB_SHIFT=7`.
 
 ### Instruction Set
-8 real instructions (ADD, ADDI, NAND, LUI, SW, LW, BEQ, JALR) plus ~13 pseudo-instructions (NOP, HALT, LLI, MOVI, RET, PUSH, POP, J, CALL, INC, DEC, MOV, LWI) and assembler directives (`.fill`, `.space`, `EQU`).
+8 real instructions (ADD, ADDI, NAND, LUI, SW, LW, BEQ, JALR) plus pseudo-instructions (NOP, HALT, LLI, MOVI, RET, PUSH, POP, J, CALL, INC, DEC, MOV, LWI) and assembler directives (`.fill`, `.space`, `EQU`).
+
+JALR sub-instructions (Ra=R0, Rb=R0, `imm7[6:3]` = function code): `smsr rA`, `gmsr rA`, `halt` (→ `0xE018`), `syscall` (→ `0xE020`, Rc=R0), `rti` (→ `0xE02E`, Rc=R6/LR).
 
 Register aliases: `SP`=R7, `LR`=R6, `FP`=R5. Hex literals use `0x` or `$` prefix. Comments use `#` or `;`.
 

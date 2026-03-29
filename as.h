@@ -57,6 +57,13 @@ enum {
     OP_JALR
 };
 
+// JALR sub-instruction function codes (imm7[6:3] field)
+#define XFUNC_SMSR      1
+#define XFUNC_GMSR      2
+#define XFUNC_HALT      3
+#define XFUNC_SYSCALL   4
+#define XFUNC_RTI       5
+
 enum
 {
     ST_UNDEF,

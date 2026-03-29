@@ -76,7 +76,11 @@
      FP = 292,
      FILL = 293,
      SPACE = 294,
-     HALT = 295
+     HALT = 295,
+     SMSR = 296,
+     GMSR = 297,
+     SYSCALL = 298,
+     RTI = 299
    };
 #endif
 /* Tokens.  */
@@ -118,20 +122,24 @@
 #define FILL 293
 #define SPACE 294
 #define HALT 295
+#define SMSR 296
+#define GMSR 297
+#define SYSCALL 298
+#define RTI 299
 
 
 
 
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 typedef union YYSTYPE
-#line 87 "as.y"
+#line 89 "as.y"
 {
     int ival;
     int symbol;
     char *lexeme;
 }
 /* Line 1529 of yacc.c.  */
-#line 135 "y.tab.h"
+#line 143 "y.tab.h"
 	YYSTYPE;
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1
